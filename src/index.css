@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-body { @apply bg-slate-50 text-slate-900; }
+body { @apply bg-slate-50 text-slate-900; font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans Telugu", "Nirmala UI", sans-serif; }
 @utility btn { @apply rounded-lg px-4 py-3 text-base font-semibold active:scale-95 disabled:opacity-50; }
 @utility btn-primary { @apply btn bg-teal-700 text-white; }
 @utility btn-ghost { @apply btn bg-slate-200 text-slate-800; }

@@ -1,0 +1,52 @@
+import { useStore } from '../lib/storeContext'
+import { reverseEntry } from '../lib/db'
+import { formatINR } from '../lib/money'
+import { entryLabel, formatWhen } from '../lib/labels'
+import type { View } from '../App'
+import { useLang } from '../lib/langContext'
+
+export default function TxnDetail({ id, go }: { id: string; go: (v: View) => void }) {
+  const { shopId, uid, entries, customers } = useStore()
+  const { t, lang } = useLang()
+  const e = entries.find((x) => x.id === id)
+  if (!e) return <p className="text-slate-500">{t('loading')}</p>
+  const c = customers.find((x) => x.id === e.customerId)
+  const cancelled = entries.some((x) => x.reverses === e.id)
+  const canCancel = (e.type === 'bill' || e.type === 'payment') && !cancelled
+
+  return (
+    <div className="flex flex-col gap-4">
+      <button className="self-start text-lg text-teal-800 underline" onClick={() => go({ name: 'customer', id: e.customerId })}>← {c?.name ?? 'Back'}</button>
+      <div className="card">
+        <p className="text-lg text-slate-600">{entryLabel(e, t)}</p>
+        <p className="text-4xl font-bold">{formatINR(e.amountPaise)}</p>
+        <p className="mt-1 text-lg">{c?.name}</p>
+        <p className="text-slate-500">{formatWhen(e.occurredAt, lang)}{e.method && ` · ${e.method}`}</p>
+        <p className="mt-1">{e.pending ? t('waitingSync') : t('synced')}</p>
+        {cancelled && <p className="mt-1 font-semibold text-amber-700">{t('txnCancelled')}</p>}
+        {e.description && <p className="mt-1 text-slate-600">{e.description}</p>}
+      </div>
+      {e.items && e.items.length > 0 && (
+        <div className="card">
+          <div className="grid grid-cols-[1.2fr_1fr_0.8fr] gap-2 border-b pb-1 text-sm font-bold text-slate-600">
+            <span>{t('colItem')}</span><span>{t('colQty')}</span><span className="text-right">{t('colAmount')}</span>
+          </div>
+          {e.items.map((i, k) => (
+            <div key={k} className="grid grid-cols-[1.2fr_1fr_0.8fr] gap-2 border-b border-slate-100 py-2 last:border-0">
+              <span className="font-semibold">{i.name}</span><span>{i.qty} {i.unit}</span>
+              <span className="text-right font-semibold">{formatINR(i.lineTotalPaise)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {canCancel && (
+        <button className="btn-ghost text-red-700" onClick={() => {
+          if (confirm(t('cancelConfirm', { label: entryLabel(e, t), amt: formatINR(e.amountPaise) }))) {
+            reverseEntry(shopId, uid, e)
+            go({ name: 'customer', id: e.customerId })
+          }
+        }}>{t('cancelEntry')}</button>
+      )}
+    </div>
+  )
+}
