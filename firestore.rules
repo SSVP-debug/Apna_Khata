@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(shopId) {
+      return request.auth != null && request.auth.uid == shopId;
+    }
+
+    match /shops/{shopId}/customers/{customerId} {
+      allow read: if isOwner(shopId);
+      allow create, update: if isOwner(shopId)
+        && request.resource.data.keys().hasOnly(['name','phone','normalizedPhone','notes','isActive','createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.phone is string
+        && request.resource.data.normalizedPhone is string
+        && request.resource.data.notes is string && request.resource.data.notes.size() <= 500
+        && request.resource.data.isActive is bool
+        && request.resource.data.createdAt is number;
+      allow delete: if false;
+    }
+
+    // Append-only ledger: no update, no delete. Corrections are new 'reversal' entries.
+    match /shops/{shopId}/ledger/{entryId} {
+      allow read: if isOwner(shopId);
+      allow create: if isOwner(shopId)
+        && request.resource.data.keys().hasOnly(['customerId','type','sign','amountPaise','method','description','mode','items','reverses','occurredAt','createdBy'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.customerId is string
+        && existsAfter(/databases/$(database)/documents/shops/$(shopId)/customers/$(request.resource.data.customerId))
+        && request.resource.data.amountPaise is int && request.resource.data.amountPaise > 0
+        && request.resource.data.occurredAt is number
+        && request.resource.data.sign in [1, -1]
+        && request.resource.data.type in ['opening','bill','payment','reversal']
+        && (
+          (request.resource.data.type in ['opening','bill'] && request.resource.data.sign == 1)
+          || (request.resource.data.type == 'payment' && request.resource.data.sign == -1)
+          || (request.resource.data.type == 'reversal' && request.resource.data.reverses is string)
+        );
+      allow update, delete: if false;
+    }
+  }
+}
