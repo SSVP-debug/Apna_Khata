@@ -1,11 +1,14 @@
 import { createContext, useContext } from 'react'
 import type { Customer, Entry } from './types'
+import type { Product } from './products'
 
 export interface Store {
   shopId: string
   uid: string
   customers: Customer[]
   entries: Entry[]
+  products: Product[]
+  lastSync: number | null
   pending: number
   online: boolean
 }

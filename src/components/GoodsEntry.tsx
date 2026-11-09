@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../lib/storeContext'
-import { addEntry, newId } from '../lib/db'
+import { addEntry, newId, rememberProducts } from '../lib/db'
+import { findProduct, priceFor, type Product } from '../lib/products'
 import { formatINR, parseRupees } from '../lib/money'
 import { parseItems, type ParsedItem } from '../lib/parseItems'
 import type { Item } from '../lib/types'
@@ -15,6 +16,7 @@ interface Row {
   unit: string
   unitPricePaise: number // may be fractional; amount = qty x unit price
   amountText: string
+  suggested: boolean // price came from remembered items
 }
 
 const textOf = (p: number) => (p % 100 === 0 ? String(p / 100) : (p / 100).toFixed(2))
@@ -25,12 +27,20 @@ const qtyOf = (r: Row) => {
 
 function fromParsed(p: ParsedItem): Row {
   const unitPricePaise = p.amountPaise ? p.amountPaise / p.qty : 0
-  return { key: newId(), name: p.name, qtyText: String(p.qty), unit: p.unit, unitPricePaise, amountText: p.amountPaise ? textOf(p.amountPaise) : '' }
+  return { key: newId(), name: p.name, qtyText: String(p.qty), unit: p.unit, unitPricePaise, amountText: p.amountPaise ? textOf(p.amountPaise) : '', suggested: false }
 }
-const blank = (): Row => ({ key: newId(), name: '', qtyText: '1', unit: '', unitPricePaise: 0, amountText: '' })
+/** If the amount is empty and the item is remembered, fill in the saved price (still editable). */
+function applyMemory(r: Row, products: Product[]): Row {
+  if (r.amountText.trim() || !r.name.trim()) return r
+  const p = findProduct(products, r.name, r.unit)
+  if (!p) return r
+  const q = qtyOf(r) || 1
+  return { ...r, unit: r.unit || p.unit, unitPricePaise: p.unitPricePaise, amountText: textOf(priceFor(p, q)), suggested: true }
+}
+const blank = (): Row => ({ key: newId(), name: '', qtyText: '1', unit: '', unitPricePaise: 0, amountText: '', suggested: false })
 
 export default function GoodsEntry({ customerId, customerName }: { customerId: string; customerName: string }) {
-  const { shopId, uid } = useStore()
+  const { shopId, uid, products, online } = useStore()
   const { t } = useLang()
   const [rows, setRows] = useState<Row[]>([])
   const [typed, setTyped] = useState('')
@@ -61,7 +71,7 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
   function setAmount(r: Row, amountText: string): Row {
     const a = parseRupees(amountText)
     const q = qtyOf(r)
-    return { ...r, amountText, unitPricePaise: a && q > 0 ? a / q : r.unitPricePaise }
+    return { ...r, amountText, suggested: false, unitPricePaise: a && q > 0 ? a / q : r.unitPricePaise }
   }
 
   function addFromText(text: string) {
@@ -69,9 +79,10 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
     if (!parsed.length) return setErr(t('errUnderstand'))
     setErr('')
     setDone('')
-    setRows((rs) => [...rs, ...parsed.map(fromParsed)])
+    setRows((rs) => [...rs, ...parsed.map(fromParsed).map((r) => applyMemory(r, products))])
   }
 
+  const frequent = [...products].sort((a, b) => b.uses - a.uses || b.updatedAt - a.updatedAt).slice(0, 8)
   const lines = rows.map((r) => parseRupees(r.amountText))
   const total = lines.reduce<number>((s, a) => s + (a ?? 0), 0)
 
@@ -89,7 +100,8 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
       unitPricePaise: Math.round(lines[i]! / qtyOf(r)), lineTotalPaise: lines[i]!,
     }))
     addEntry(shopId, uid, { customerId, type: 'bill', mode: 'itemized', amountPaise: total, items })
-    setDone(t('goodsSuccess', { amt: formatINR(total), name: customerName }))
+    rememberProducts(shopId, items.map((i) => ({ name: i.name, unit: i.unit, unitPricePaise: i.unitPricePaise })), products)
+    setDone(t('goodsSuccess', { amt: formatINR(total), name: customerName }) + (online ? '' : ' ' + t('savedOffline')))
     setRows([])
     setErr('')
   }
@@ -100,6 +112,20 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
       {done && <p className="rounded-lg bg-green-100 p-3 text-lg font-semibold text-green-800">✓ {done}</p>}
 
       <MicButton hint={t('tapAllGoods')} onText={addFromText} />
+
+      {frequent.length > 0 && (
+        <div>
+          <p className="mb-1 text-sm text-slate-600">{t('frequent')}</p>
+          <div className="flex flex-wrap gap-2">
+            {frequent.map((p) => (
+              <button key={p.id} className="rounded-full bg-teal-50 px-3 py-2 text-base font-semibold text-teal-800 active:scale-95"
+                onClick={() => { setDone(''); setRows((rs) => [...rs, { key: newId(), name: p.name, qtyText: '1', unit: p.unit, unitPricePaise: p.unitPricePaise, amountText: textOf(p.unitPricePaise), suggested: true }]) }}>
+                {p.name} · {formatINR(p.unitPricePaise)}/{p.unit}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <textarea className="input min-h-24 text-lg" rows={3} lang={getVoiceLang()} placeholder={t('typePh')} value={typed}
@@ -119,7 +145,8 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
             <div key={r.key} className={`grid grid-cols-[1.1fr_1.4fr_0.9fr] items-start gap-2 rounded-lg p-1 ${zero ? 'bg-red-50' : ''}`}>
               <div className="flex flex-col gap-1">
                 <input className="input px-2 py-2" placeholder={t('itemPh')} value={r.name}
-                  onChange={(e) => patch(r.key, (x) => ({ ...x, name: e.target.value }))} />
+                  onChange={(e) => patch(r.key, (x) => ({ ...x, name: e.target.value }))}
+                  onBlur={() => patch(r.key, (x) => applyMemory(x, products))} />
                 <button className={`text-left text-sm underline ${zero ? 'font-bold text-red-700' : 'text-slate-500'}`}
                   onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}>{t('removeItem')}</button>
               </div>
@@ -135,8 +162,13 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
                 <input className="w-20 rounded border border-slate-200 px-1 text-center text-sm" placeholder={t('unitPh')} value={r.unit}
                   onChange={(e) => patch(r.key, (x) => ({ ...x, unit: e.target.value }))} />
               </div>
-              <input className="input px-2 py-2 text-right font-semibold" inputMode="decimal" placeholder="₹" value={r.amountText}
-                onChange={(e) => patch(r.key, (x) => setAmount(x, e.target.value))} />
+              <div className="flex flex-col gap-1">
+                <input className="input px-2 py-2 text-right font-semibold" inputMode="decimal" placeholder="₹" value={r.amountText}
+                  onChange={(e) => patch(r.key, (x) => setAmount(x, e.target.value))} />
+                {r.suggested && r.unitPricePaise > 0 && (
+                  <span className="text-right text-xs text-amber-700">{t('savedPrice', { p: `${formatINR(Math.round(r.unitPricePaise))}/${r.unit || 'pcs'}` })}</span>
+                )}
+              </div>
             </div>
           )
         })}

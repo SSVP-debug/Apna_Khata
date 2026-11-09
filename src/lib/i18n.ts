@@ -45,6 +45,15 @@ const en = {
   loginTagline: 'Your digital credit Khata', email: 'Email', password: 'Password (min 6)', login: 'Login',
   createAccount: 'Create account', sendReset: 'Send reset link', newShop: 'New shop? Register', backToLogin: 'Back to login',
   forgot: 'Forgot password?', resetSent: 'Password reset email sent.',
+  productsTitle: 'Items & Prices', productsBtn: 'Items & Prices',
+  productsHelp: 'Saved prices are suggested when you add goods. Prices are also learned from your confirmed bills.',
+  noProducts: 'No saved items yet.', itemName: 'Item name', pricePerUnit: 'Price ₹ per unit', perUnit: '/{unit}',
+  edit: 'Edit', save: 'Save', deleteBtn: 'Delete', deleteConfirm: 'Delete {name}? Past bills are not affected.',
+  addProduct: '+ Add item', errProduct: 'Enter the item name and a valid price', frequent: 'Frequent items',
+  savedPrice: 'Saved price {p}', backSettings: '← Settings',
+  savedOffline: 'Saved on this phone. It will sync when internet returns.',
+  offlineBanner: 'No internet. You can keep working. Everything is saved on this phone and will sync later.',
+  syncError: 'Some changes could not be saved: {msg}', dismiss: 'Dismiss', lastSynced: 'Last synced', never: 'Not yet',
 }
 
 export type Key = keyof typeof en
@@ -94,6 +103,15 @@ const te: Record<Key, string> = {
   loginTagline: 'మీ డిజిటల్ బాకీ ఖాతా', email: 'ఈమెయిల్', password: 'పాస్‌వర్డ్ (కనీసం 6)', login: 'లాగిన్',
   createAccount: 'ఖాతా సృష్టించండి', sendReset: 'రీసెట్ లింక్ పంపండి', newShop: 'కొత్త షాపా? నమోదు చేయండి', backToLogin: 'లాగిన్‌కు వెనక్కి',
   forgot: 'పాస్‌వర్డ్ మర్చిపోయారా?', resetSent: 'పాస్‌వర్డ్ రీసెట్ ఈమెయిల్ పంపబడింది.',
+  productsTitle: 'వస్తువులు & ధరలు', productsBtn: 'వస్తువులు & ధరలు',
+  productsHelp: 'సేవ్ చేసిన ధరలు సరుకులు జోడించేటప్పుడు సూచించబడతాయి. నిర్ధారించిన బిల్లుల నుండి కూడా ధరలు గుర్తుంచుకోబడతాయి.',
+  noProducts: 'ఇంకా వస్తువులు సేవ్ కాలేదు.', itemName: 'వస్తువు పేరు', pricePerUnit: 'యూనిట్ ధర ₹', perUnit: '/{unit}',
+  edit: 'మార్చు', save: 'సేవ్', deleteBtn: 'తొలగించు', deleteConfirm: '{name} తొలగించాలా? పాత బిల్లులపై ప్రభావం ఉండదు.',
+  addProduct: '+ వస్తువు జోడించండి', errProduct: 'వస్తువు పేరు మరియు సరైన ధర రాయండి', frequent: 'తరచుగా అమ్మే వస్తువులు',
+  savedPrice: 'సేవ్ చేసిన ధర {p}', backSettings: '← సెట్టింగ్స్',
+  savedOffline: 'ఈ ఫోన్‌లో సేవ్ అయింది. ఇంటర్నెట్ వచ్చాక సింక్ అవుతుంది.',
+  offlineBanner: 'ఇంటర్నెట్ లేదు. మీరు పని కొనసాగించవచ్చు. అన్నీ ఈ ఫోన్‌లో సేవ్ అవుతాయి, తర్వాత సింక్ అవుతాయి.',
+  syncError: 'కొన్ని మార్పులు సేవ్ కాలేదు: {msg}', dismiss: 'మూసివేయి', lastSynced: 'చివరి సింక్', never: 'ఇంకా లేదు',
 }
 
 export const dictionaries: Record<Lang, Record<Key, string>> = { en, te }

@@ -5,7 +5,7 @@ import { formatINR, parseRupees } from '../lib/money'
 import { useLang } from '../lib/langContext'
 
 export default function PaymentBox({ customerId, customerName }: { customerId: string; customerName: string }) {
-  const { shopId, uid } = useStore()
+  const { shopId, uid, online } = useStore()
   const { t } = useLang()
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
@@ -17,7 +17,7 @@ export default function PaymentBox({ customerId, customerName }: { customerId: s
     if (!p) return setMsg(t('errValidAmount'))
     if (!confirm(t('confirmPay', { amt: formatINR(p), name: customerName }))) return
     addEntry(shopId, uid, { customerId, type: 'payment', amountPaise: p, method })
-    setMsg(t('paySuccess', { amt: formatINR(p), name: customerName }))
+    setMsg(t('paySuccess', { amt: formatINR(p), name: customerName }) + (online ? '' : ' ' + t('savedOffline')))
     setAmount('')
     setOpen(false)
   }

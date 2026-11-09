@@ -3,11 +3,15 @@ import { collection, onSnapshot, type QuerySnapshot, type DocumentData, type Sna
 import { db } from './firebase'
 import { Ctx } from './storeContext'
 import type { Customer, Entry } from './types'
+import type { Product } from './products'
+import { getLastSync, saveLastSync } from './settings'
 
 export function StoreProvider({ uid, children }: { uid: string; children: ReactNode }) {
   const shopId = uid // one shop per owner for now; path layout allows members later
   const [customers, setCustomers] = useState<Customer[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [lastSync, setLastSync] = useState<number | null>(getLastSync())
   const [pc, setPc] = useState(0)
   const [pe, setPe] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
@@ -27,6 +31,15 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
         })),
       )
       setPe(s.docs.filter((d) => d.metadata.hasPendingWrites).length)
+      // Server-confirmed snapshot with nothing waiting = a successful sync.
+      if (!s.metadata.fromCache && !s.metadata.hasPendingWrites) {
+        const now = Date.now()
+        saveLastSync(now)
+        setLastSync(now)
+      }
+    })
+    const u3 = onSnapshot(collection(db, 'shops', shopId, 'products'), (s: QuerySnapshot<DocumentData>) => {
+      setProducts(s.docs.map((d) => ({ ...(d.data() as Omit<Product, 'id'>), id: d.id })))
     })
     const on = () => setOnline(true)
     const off = () => setOnline(false)
@@ -35,14 +48,15 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
     return () => {
       u1()
       u2()
+      u3()
       window.removeEventListener('online', on)
       window.removeEventListener('offline', off)
     }
   }, [shopId])
 
   const value = useMemo(
-    () => ({ shopId, uid, customers, entries, pending: pc + pe, online }),
-    [shopId, uid, customers, entries, pc, pe, online],
+    () => ({ shopId, uid, customers, entries, products, lastSync, pending: pc + pe, online }),
+    [shopId, uid, customers, entries, products, lastSync, pc, pe, online],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import {
+  CACHE_SIZE_UNLIMITED,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
@@ -17,6 +18,6 @@ export const auth = getAuth(app)
 
 // Offline persistence: writes are queued in IndexedDB and synced automatically.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager(), cacheSizeBytes: CACHE_SIZE_UNLIMITED }),
   ignoreUndefinedProperties: true,
 })

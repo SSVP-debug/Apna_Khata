@@ -36,7 +36,23 @@ service cloud.firestore {
           || (request.resource.data.type == 'payment' && request.resource.data.sign == -1)
           || (request.resource.data.type == 'reversal' && request.resource.data.reverses is string)
         );
-      allow update, delete: if false;
+      // Idempotent retry: re-sending an identical entry is a harmless no-op; any change is rejected.
+      allow update: if isOwner(shopId) && request.resource.data == resource.data;
+      allow delete: if false;
+    }
+
+    // Remembered item prices (not financial records, so they may be edited and deleted).
+    match /shops/{shopId}/products/{productId} {
+      allow read: if isOwner(shopId);
+      allow create, update: if isOwner(shopId)
+        && request.resource.data.keys().hasOnly(['name','normalizedName','unit','unitPricePaise','uses','updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.normalizedName is string
+        && request.resource.data.unit is string && request.resource.data.unit.size() <= 20
+        && request.resource.data.unitPricePaise is int && request.resource.data.unitPricePaise > 0 && request.resource.data.unitPricePaise <= 100000000
+        && request.resource.data.uses is int && request.resource.data.uses >= 0
+        && request.resource.data.updatedAt is number;
+      allow delete: if isOwner(shopId);
     }
   }
 }

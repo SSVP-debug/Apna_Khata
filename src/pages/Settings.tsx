@@ -4,13 +4,15 @@ import { auth } from '../lib/firebase'
 import { useStore } from '../lib/storeContext'
 import { toCSV } from '../lib/ledger'
 import { useLang } from '../lib/langContext'
+import { formatWhen } from '../lib/labels'
+import type { View } from '../App'
 
 interface InstallEvent extends Event {
   prompt(): Promise<void>
 }
 
-export default function Settings() {
-  const { entries, customers, pending, online } = useStore()
+export default function Settings({ go }: { go: (v: View) => void }) {
+  const { entries, customers, pending, online, lastSync } = useStore()
   const { t, lang, setLang } = useLang()
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null)
 
@@ -52,7 +54,9 @@ export default function Settings() {
       <div className="card">
         <p className="text-slate-600">{t('syncLabel')}</p>
         <p className="text-lg font-semibold">{!online ? t('offline') : pending ? t('waiting', { n: pending }) : t('allSynced')}</p>
+        <p className="text-sm text-slate-500">{t('lastSynced')}: {lastSync ? formatWhen(lastSync, lang) : t('never')}</p>
       </div>
+      <button className="btn-ghost" onClick={() => go({ name: 'products' })}>{t('productsBtn')}</button>
       <div className="card flex flex-col gap-2">
         {installEvt ? (
           <button className="btn-primary" onClick={() => installEvt.prompt()}>{t('installBtn')}</button>

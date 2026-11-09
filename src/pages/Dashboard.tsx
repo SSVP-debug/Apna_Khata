@@ -8,7 +8,7 @@ import type { View } from '../App'
 import { useLang } from '../lib/langContext'
 
 export default function Dashboard({ go }: { go: (v: View) => void }) {
-  const { entries, customers, pending, online } = useStore()
+  const { entries, customers, pending, online, lastSync } = useStore()
   const { t, lang } = useLang()
   const [adding, setAdding] = useState(false)
   const bal = balancesByCustomer(entries)
@@ -51,6 +51,7 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
         <p className="text-xl font-bold">
           {!online ? (pending ? t('offlineWaiting', { n: pending }) : t('offline')) : pending ? t('waiting', { n: pending }) : t('allSynced')}
         </p>
+        <p className="text-sm text-slate-500">{t('lastSynced')}: {lastSync ? formatWhen(lastSync, lang) : t('never')}</p>
       </div>
       {adding && <AddCustomer onClose={() => setAdding(false)} go={go} />}
     </div>
