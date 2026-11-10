@@ -1,6 +1,8 @@
 export interface Customer {
   id: string
-  name: string
+  name: string // as typed by the owner
+  nameEn?: string // English spelling (auto-generated or owner-corrected)
+  nameTe?: string // Telugu spelling (auto-generated or owner-corrected)
   phone: string
   normalizedPhone: string
   notes: string

@@ -30,6 +30,11 @@ function canon(s: string): string {
   return n.length > 3 && /^[a-z]+$/.test(n) && n.endsWith('s') ? n.slice(0, -1) : n
 }
 
+export function productsByName(products: Product[], name: string): Product[] {
+  const k = canon(name)
+  return k ? products.filter((p) => canon(p.name) === k) : []
+}
+
 /**
  * Find a remembered price. If a unit was given it must match (no "per kg" price for a packet).
  * If no unit was given, the most-used record for that name wins.
@@ -41,6 +46,20 @@ export function findProduct(products: Product[], name: string, unit: string): Pr
   const u = unit.trim().toLowerCase()
   const pool = u ? byName.filter((p) => p.unit.toLowerCase() === u) : byName
   return [...pool].sort((a, b) => b.uses - a.uses || b.updatedAt - a.updatedAt)[0]
+}
+
+export type PriceCheck = 'ok' | 'changed' | 'very-different'
+
+/**
+ * Compare the price being entered with the remembered one.
+ * 'very-different' (5x higher or 5x lower) is the typical typing-mistake pattern (extra or missing zero).
+ */
+export function checkPrice(savedPaise: number, enteredPaise: number): PriceCheck {
+  if (!(savedPaise > 0) || !(enteredPaise > 0)) return 'ok'
+  const diff = Math.abs(enteredPaise - savedPaise)
+  if (diff <= Math.max(savedPaise * 0.01, 50)) return 'ok'
+  const ratio = enteredPaise / savedPaise
+  return ratio >= 5 || ratio <= 0.2 ? 'very-different' : 'changed'
 }
 
 export const priceFor = (p: Product, qty: number) => Math.round(p.unitPricePaise * qty)

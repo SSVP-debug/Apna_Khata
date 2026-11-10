@@ -54,6 +54,19 @@ const en = {
   savedOffline: 'Saved on this phone. It will sync when internet returns.',
   offlineBanner: 'No internet. You can keep working. Everything is saved on this phone and will sync later.',
   syncError: 'Some changes could not be saved: {msg}', dismiss: 'Dismiss', lastSynced: 'Last synced', never: 'Not yet',
+  priceChanged: 'Price is different from last time', priceVeryDifferent: 'Very different from last time. Please check for a typing mistake.',
+  priceLastNow: 'Last time: {old} · Now: {now}', useOld: 'Use {old}', keepNew: 'Keep {now}',
+  errPriceCheck: 'Please check the highlighted prices: use the old price or keep the new one.',
+  nameEnLabel: 'Name in English', nameTeLabel: 'Name in Telugu (తెలుగు)',
+  nameAutoNote: 'One of these names may be auto-generated. Please check it and correct if needed.',
+  continueGoogle: 'Continue with Google', orEmail: 'or use email and password',
+  errBadLogin: 'Wrong email or password.', errEmailInUse: 'This email is already registered. Please log in.',
+  errWeakPassword: 'Password must be at least 6 characters.', errInvalidEmail: 'Enter a valid email address.',
+  errNetwork: 'No internet. Login needs internet the first time.', errTooMany: 'Too many tries. Please wait a few minutes.',
+  errAccountExists: 'This email is registered with a different login method. Please use your original method.',
+  errDomain: 'This website address is not allowed yet. The app owner must add it in Firebase (Authorized domains).',
+  errNotEnabled: 'This login method is not turned on yet. The app owner must enable it in Firebase.',
+  errGeneric: 'Login failed. Please try again.',
 }
 
 export type Key = keyof typeof en
@@ -112,6 +125,19 @@ const te: Record<Key, string> = {
   savedOffline: 'ఈ ఫోన్‌లో సేవ్ అయింది. ఇంటర్నెట్ వచ్చాక సింక్ అవుతుంది.',
   offlineBanner: 'ఇంటర్నెట్ లేదు. మీరు పని కొనసాగించవచ్చు. అన్నీ ఈ ఫోన్‌లో సేవ్ అవుతాయి, తర్వాత సింక్ అవుతాయి.',
   syncError: 'కొన్ని మార్పులు సేవ్ కాలేదు: {msg}', dismiss: 'మూసివేయి', lastSynced: 'చివరి సింక్', never: 'ఇంకా లేదు',
+  priceChanged: 'ధర గత సారి కంటే వేరుగా ఉంది', priceVeryDifferent: 'గత సారి కంటే చాలా తేడా ఉంది. తప్పు రాశారేమో చూడండి.',
+  priceLastNow: 'గత సారి: {old} · ఇప్పుడు: {now}', useOld: '{old} వాడండి', keepNew: '{now} ఉంచండి',
+  errPriceCheck: 'హైలైట్ చేసిన ధరలను చూడండి: పాత ధర వాడండి లేదా కొత్త ధర ఉంచండి.',
+  nameEnLabel: 'ఇంగ్లీష్‌లో పేరు (English)', nameTeLabel: 'తెలుగులో పేరు',
+  nameAutoNote: 'ఈ పేర్లలో ఒకటి ఆటోమేటిక్‌గా వచ్చి ఉండవచ్చు. దయచేసి చూసి అవసరమైతే సరిచేయండి.',
+  continueGoogle: 'Google తో కొనసాగండి', orEmail: 'లేదా ఈమెయిల్ మరియు పాస్‌వర్డ్ వాడండి',
+  errBadLogin: 'ఈమెయిల్ లేదా పాస్‌వర్డ్ తప్పు.', errEmailInUse: 'ఈ ఈమెయిల్ ఇప్పటికే నమోదై ఉంది. దయచేసి లాగిన్ అవ్వండి.',
+  errWeakPassword: 'పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి.', errInvalidEmail: 'సరైన ఈమెయిల్ రాయండి.',
+  errNetwork: 'ఇంటర్నెట్ లేదు. మొదటిసారి లాగిన్‌కు ఇంటర్నెట్ కావాలి.', errTooMany: 'చాలాసార్లు ప్రయత్నించారు. కొన్ని నిమిషాలు ఆగండి.',
+  errAccountExists: 'ఈ ఈమెయిల్ వేరే లాగిన్ పద్ధతితో నమోదై ఉంది. మీ అసలు పద్ధతిని వాడండి.',
+  errDomain: 'ఈ వెబ్‌సైట్ చిరునామా ఇంకా అనుమతించబడలేదు. యాప్ యజమాని Firebase లో (Authorized domains) జోడించాలి.',
+  errNotEnabled: 'ఈ లాగిన్ పద్ధతి ఇంకా ఆన్ చేయలేదు. యాప్ యజమాని Firebase లో ఎనేబుల్ చేయాలి.',
+  errGeneric: 'లాగిన్ కాలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.',
 }
 
 export const dictionaries: Record<Lang, Record<Key, string>> = { en, te }

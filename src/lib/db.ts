@@ -3,6 +3,7 @@ import { productId, type Product } from './products'
 import { db } from './firebase'
 import { normalizePhone } from './money'
 import { normName } from './labels'
+import { variants } from './names'
 import type { Entry, EntryType, Item } from './types'
 
 const customersCol = (shopId: string) => collection(db, 'shops', shopId, 'customers')
@@ -31,8 +32,11 @@ export function addCustomer(
   const id = newId()
   const now = Date.now()
   const batch = writeBatch(db)
+  const v = variants(input.name)
   batch.set(doc(customersCol(shopId), id), {
     name: input.name.trim(),
+    nameEn: v.en,
+    nameTe: v.te,
     phone: input.phone.trim(),
     normalizedPhone: normalizePhone(input.phone),
     notes: input.notes.trim(),
@@ -57,7 +61,7 @@ export function addCustomer(
 export function updateCustomer(
   shopId: string,
   id: string,
-  patch: { name?: string; phone?: string; notes?: string; isActive?: boolean },
+  patch: { name?: string; nameEn?: string; nameTe?: string; phone?: string; notes?: string; isActive?: boolean },
 ) {
   const data: Record<string, unknown> = { ...patch }
   if (patch.phone !== undefined) data.normalizedPhone = normalizePhone(patch.phone)

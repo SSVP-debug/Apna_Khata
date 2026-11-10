@@ -6,6 +6,7 @@ import { entryLabel, formatWhen } from '../lib/labels'
 import AddCustomer from '../components/AddCustomer'
 import type { View } from '../App'
 import { useLang } from '../lib/langContext'
+import { displayName } from '../lib/names'
 
 export default function Dashboard({ go }: { go: (v: View) => void }) {
   const { entries, customers, pending, online, lastSync } = useStore()
@@ -15,7 +16,7 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
   const owing = [...bal.values()].filter((v) => v > 0)
   const totalOwed = owing.reduce((s, v) => s + v, 0)
   const recent = [...entries].sort((a, b) => b.occurredAt - a.occurredAt).slice(0, 8)
-  const name = (id: string) => customers.find((c) => c.id === id)?.name ?? '—'
+  const name = (id: string) => (() => { const c = customers.find((x) => x.id === id); return c ? displayName(c, lang) : '—' })()
 
   return (
     <div className="flex flex-col gap-4">

@@ -8,6 +8,7 @@ import GoodsEntry from '../components/GoodsEntry'
 import PaymentBox from '../components/PaymentBox'
 import type { View } from '../App'
 import { useLang } from '../lib/langContext'
+import { displayName, variants } from '../lib/names'
 
 export default function Khata({ id, go }: { id: string; go: (v: View) => void }) {
   const { shopId, customers, entries } = useStore()
@@ -15,22 +16,24 @@ export default function Khata({ id, go }: { id: string; go: (v: View) => void })
   const c = customers.find((x) => x.id === id)
   const mine = entries.filter((e) => e.customerId === id).sort((a, b) => b.occurredAt - a.occurredAt)
   const [renaming, setRenaming] = useState(false)
-  const [name, setName] = useState('')
+  const [nameEn, setNameEn] = useState('')
+  const [nameTe, setNameTe] = useState('')
 
   if (!c) return <p className="text-slate-500">{t('loading')}</p>
+  const shown = displayName(c, lang)
 
   return (
     <div className="flex flex-col gap-4">
       <button className="self-start text-lg text-teal-800 underline" onClick={() => go({ name: 'customers' })}>{t('backCustomers')}</button>
       <div className="card">
-        <h1 className="text-3xl font-bold">{c.name} {!c.isActive && <span className="text-base text-slate-500">{t('inactiveTag')}</span>}</h1>
+        <h1 className="text-3xl font-bold">{shown} {!c.isActive && <span className="text-base text-slate-500">{t('inactiveTag')}</span>}</h1>
         {c.phone && <p className="text-slate-500">{c.phone}</p>}
         <p className="mt-2 text-lg text-slate-600">{t('amountOwed')}</p>
         <p className="text-5xl font-bold text-red-700">{formatINR(balanceOf(mine))}</p>
       </div>
 
-      <GoodsEntry customerId={id} customerName={c.name} />
-      <PaymentBox customerId={id} customerName={c.name} />
+      <GoodsEntry customerId={id} customerName={shown} />
+      <PaymentBox customerId={id} customerName={shown} />
 
       <div className="card">
         <h2 className="mb-2 text-xl font-bold">{t('pastEntries')}</h2>
@@ -47,11 +50,20 @@ export default function Khata({ id, go }: { id: string; go: (v: View) => void })
       <div className="flex flex-col gap-2">
         {renaming ? (
           <div className="card flex flex-col gap-2">
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
-            <button className="btn-primary" onClick={() => { if (name.trim()) { updateCustomer(shopId, c.id, { name: name.trim() }); setRenaming(false) } }}>{t('saveName')}</button>
+            <label className="text-sm text-slate-600">{t('nameEnLabel')}</label>
+            <input className="input" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+            <label className="text-sm text-slate-600">{t('nameTeLabel')}</label>
+            <input className="input" value={nameTe} onChange={(e) => setNameTe(e.target.value)} />
+            <p className="text-sm text-amber-700">{t('nameAutoNote')}</p>
+            <button className="btn-primary" onClick={() => {
+              const en = nameEn.trim(), te = nameTe.trim()
+              if (!en && !te) return
+              updateCustomer(shopId, c.id, { name: en || te, nameEn: en || variants(te).en, nameTe: te || variants(en).te })
+              setRenaming(false)
+            }}>{t('saveName')}</button>
           </div>
         ) : (
-          <button className="text-teal-800 underline" onClick={() => { setName(c.name); setRenaming(true) }}>{t('changeName')}</button>
+          <button className="text-teal-800 underline" onClick={() => { setNameEn(displayName(c, 'en')); setNameTe(displayName(c, 'te')); setRenaming(true) }}>{t('changeName')}</button>
         )}
         <button className="text-teal-800 underline" onClick={() => updateCustomer(shopId, c.id, { isActive: !c.isActive })}>
           {c.isActive ? t('hide') : t('restore')}

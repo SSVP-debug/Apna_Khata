@@ -6,6 +6,7 @@ import { toCSV } from '../lib/ledger'
 import { useLang } from '../lib/langContext'
 import { formatWhen } from '../lib/labels'
 import type { View } from '../App'
+import { displayName } from '../lib/names'
 
 interface InstallEvent extends Event {
   prompt(): Promise<void>
@@ -23,7 +24,7 @@ export default function Settings({ go }: { go: (v: View) => void }) {
   }, [])
 
   function exportCSV() {
-    const name = (id: string) => customers.find((c) => c.id === id)?.name ?? ''
+    const name = (id: string) => (() => { const c = customers.find((x) => x.id === id); return c ? displayName(c, 'en') : '' })()
     const rows = [...entries].sort((a, b) => a.occurredAt - b.occurredAt).map((e) => [
       new Date(e.occurredAt).toISOString().slice(0, 16).replace('T', ' '), name(e.customerId), e.type, e.method ?? '',
       e.sign === 1 ? (e.amountPaise / 100).toFixed(2) : '', e.sign === -1 ? (e.amountPaise / 100).toFixed(2) : '', e.description ?? '',

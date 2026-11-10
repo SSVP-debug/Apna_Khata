@@ -4,6 +4,7 @@ import { formatINR } from '../lib/money'
 import { entryLabel, formatWhen } from '../lib/labels'
 import type { View } from '../App'
 import { useLang } from '../lib/langContext'
+import { displayName } from '../lib/names'
 
 export default function TxnDetail({ id, go }: { id: string; go: (v: View) => void }) {
   const { shopId, uid, entries, customers } = useStore()
@@ -16,11 +17,11 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
 
   return (
     <div className="flex flex-col gap-4">
-      <button className="self-start text-lg text-teal-800 underline" onClick={() => go({ name: 'customer', id: e.customerId })}>← {c?.name ?? 'Back'}</button>
+      <button className="self-start text-lg text-teal-800 underline" onClick={() => go({ name: 'customer', id: e.customerId })}>← {c ? displayName(c, lang) : t('loading')}</button>
       <div className="card">
         <p className="text-lg text-slate-600">{entryLabel(e, t)}</p>
         <p className="text-4xl font-bold">{formatINR(e.amountPaise)}</p>
-        <p className="mt-1 text-lg">{c?.name}</p>
+        <p className="mt-1 text-lg">{c ? displayName(c, lang) : ''}</p>
         <p className="text-slate-500">{formatWhen(e.occurredAt, lang)}{e.method && ` · ${e.method}`}</p>
         <p className="mt-1">{e.pending ? t('waitingSync') : t('synced')}</p>
         {cancelled && <p className="mt-1 font-semibold text-amber-700">{t('txnCancelled')}</p>}

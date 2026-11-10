@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../lib/storeContext'
 import { addCustomer } from '../lib/db'
 import { normName } from '../lib/labels'
+import { allNames, displayName, variants } from '../lib/names'
 import type { Customer } from '../lib/types'
 import type { View } from '../App'
 import MicButton from './MicButton'
@@ -9,7 +10,7 @@ import { useLang } from '../lib/langContext'
 
 export default function AddCustomer({ onClose, go }: { onClose: () => void; go: (v: View) => void }) {
   const { shopId, uid, customers } = useStore()
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [name, setName] = useState('')
   const [existing, setExisting] = useState<Customer | null>(null)
   const [confirmNew, setConfirmNew] = useState(false)
@@ -24,7 +25,10 @@ export default function AddCustomer({ onClose, go }: { onClose: () => void; go: 
   function submit() {
     if (!name.trim()) return setErr(t('enterName'))
     setErr('')
-    const found = customers.find((c) => normName(c.name) === normName(name))
+    // Same person in either script counts as a duplicate (Ramesh = రమేష్).
+    const v = variants(name)
+    const mine = new Set([normName(name), normName(v.en), normName(v.te)])
+    const found = customers.find((c) => allNames(c).some((n) => mine.has(n)))
     if (found) return setExisting(found)
     create()
   }
@@ -35,7 +39,7 @@ export default function AddCustomer({ onClose, go }: { onClose: () => void; go: 
         {existing ? (
           <>
             <h2 className="text-2xl font-bold text-amber-700">{t('existsTitle')}</h2>
-            <p className="text-lg">{t('existsMsg', { name: existing.name })}</p>
+            <p className="text-lg">{t('existsMsg', { name: displayName(existing, lang) })}</p>
             {confirmNew ? (
               <>
                 <p className="rounded-lg bg-amber-50 p-3">{t('sure', { name: name.trim() })}</p>

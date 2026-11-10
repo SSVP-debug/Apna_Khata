@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../lib/storeContext'
 import { addEntry, newId, rememberProducts } from '../lib/db'
-import { findProduct, priceFor, type Product } from '../lib/products'
+import { checkPrice, findProduct, priceFor, productsByName, type PriceCheck, type Product } from '../lib/products'
 import { formatINR, parseRupees } from '../lib/money'
 import { parseItems, type ParsedItem } from '../lib/parseItems'
 import type { Item } from '../lib/types'
@@ -17,6 +17,7 @@ interface Row {
   unitPricePaise: number // may be fractional; amount = qty x unit price
   amountText: string
   suggested: boolean // price came from remembered items
+  ackedPaise: number | null // unit price the owner chose to keep after a price warning
 }
 
 const textOf = (p: number) => (p % 100 === 0 ? String(p / 100) : (p / 100).toFixed(2))
@@ -27,7 +28,7 @@ const qtyOf = (r: Row) => {
 
 function fromParsed(p: ParsedItem): Row {
   const unitPricePaise = p.amountPaise ? p.amountPaise / p.qty : 0
-  return { key: newId(), name: p.name, qtyText: String(p.qty), unit: p.unit, unitPricePaise, amountText: p.amountPaise ? textOf(p.amountPaise) : '', suggested: false }
+  return { key: newId(), name: p.name, qtyText: String(p.qty), unit: p.unit, unitPricePaise, amountText: p.amountPaise ? textOf(p.amountPaise) : '', suggested: false, ackedPaise: null }
 }
 /** If the amount is empty and the item is remembered, fill in the saved price (still editable). */
 function applyMemory(r: Row, products: Product[]): Row {
@@ -37,7 +38,28 @@ function applyMemory(r: Row, products: Product[]): Row {
   const q = qtyOf(r) || 1
   return { ...r, unit: r.unit || p.unit, unitPricePaise: p.unitPricePaise, amountText: textOf(priceFor(p, q)), suggested: true }
 }
-const blank = (): Row => ({ key: newId(), name: '', qtyText: '1', unit: '', unitPricePaise: 0, amountText: '', suggested: false })
+/** Unit price currently entered on a row (amount / quantity), or null if not computable yet. */
+function unitPriceOf(r: Row): number | null {
+  const a = parseRupees(r.amountText)
+  const q = qtyOf(r)
+  return a && q > 0 ? a / q : null
+}
+
+/** Compare with the remembered price. Only when the unit is known, so units are never mixed up. */
+function priceWarning(r: Row, products: Product[]): { level: PriceCheck; saved: Product; now: number } | null {
+  if (!r.name.trim()) return null
+  const now = unitPriceOf(r)
+  if (now === null) return null
+  // No unit spoken: only compare when this item has exactly one saved unit (never guess between kg and packet).
+  if (!r.unit.trim() && new Set(productsByName(products, r.name).map((p) => p.unit)).size !== 1) return null
+  const saved = findProduct(products, r.name, r.unit)
+  if (!saved) return null
+  if (r.ackedPaise !== null && Math.abs(r.ackedPaise - now) < 1) return null
+  const level = checkPrice(saved.unitPricePaise, now)
+  return level === 'ok' ? null : { level, saved, now }
+}
+
+const blank = (): Row => ({ key: newId(), name: '', qtyText: '1', unit: '', unitPricePaise: 0, amountText: '', suggested: false, ackedPaise: null })
 
 export default function GoodsEntry({ customerId, customerName }: { customerId: string; customerName: string }) {
   const { shopId, uid, products, online } = useStore()
@@ -95,6 +117,7 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
       if (qtyOf(r) <= 0) return setErr(t('errQtyZero', { name: r.name }))
       if (!lines[i]) return setErr(t('errNeedAmount', { name: r.name }))
     }
+    if (rows.some((x) => priceWarning(x, products))) return setErr(t('errPriceCheck'))
     const items: Item[] = rows.map((r, i) => ({
       name: r.name.trim(), qty: qtyOf(r), unit: r.unit.trim() || 'pcs',
       unitPricePaise: Math.round(lines[i]! / qtyOf(r)), lineTotalPaise: lines[i]!,
@@ -119,7 +142,7 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
           <div className="flex flex-wrap gap-2">
             {frequent.map((p) => (
               <button key={p.id} className="rounded-full bg-teal-50 px-3 py-2 text-base font-semibold text-teal-800 active:scale-95"
-                onClick={() => { setDone(''); setRows((rs) => [...rs, { key: newId(), name: p.name, qtyText: '1', unit: p.unit, unitPricePaise: p.unitPricePaise, amountText: textOf(p.unitPricePaise), suggested: true }]) }}>
+                onClick={() => { setDone(''); setRows((rs) => [...rs, { key: newId(), name: p.name, qtyText: '1', unit: p.unit, unitPricePaise: p.unitPricePaise, amountText: textOf(p.unitPricePaise), suggested: true, ackedPaise: null }]) }}>
                 {p.name} · {formatINR(p.unitPricePaise)}/{p.unit}
               </button>
             ))}
@@ -141,6 +164,7 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
         {rows.length === 0 && <p className="py-2 text-center text-slate-500">{t('noItems')}</p>}
         {rows.map((r) => {
           const zero = qtyOf(r) <= 0
+          const warn = priceWarning(r, products)
           return (
             <div key={r.key} className={`grid grid-cols-[1.1fr_1.4fr_0.9fr] items-start gap-2 rounded-lg p-1 ${zero ? 'bg-red-50' : ''}`}>
               <div className="flex flex-col gap-1">
@@ -169,6 +193,21 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
                   <span className="text-right text-xs text-amber-700">{t('savedPrice', { p: `${formatINR(Math.round(r.unitPricePaise))}/${r.unit || 'pcs'}` })}</span>
                 )}
               </div>
+              {warn && (
+                <div className={`col-span-3 rounded-lg border-2 p-2 ${warn.level === 'very-different' ? 'border-red-500 bg-red-50' : 'border-amber-400 bg-amber-50'}`}>
+                  <p className="font-bold">⚠ {warn.level === 'very-different' ? t('priceVeryDifferent') : t('priceChanged')}</p>
+                  <p>{t('priceLastNow', { old: `${formatINR(warn.saved.unitPricePaise)}/${warn.saved.unit}`, now: `${formatINR(Math.round(warn.now))}/${r.unit || warn.saved.unit}` })}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button className="btn-primary py-2"
+                      onClick={() => patch(r.key, (x) => ({ ...x, unitPricePaise: warn.saved.unitPricePaise, amountText: textOf(priceFor(warn.saved, qtyOf(x) || 1)), suggested: true, ackedPaise: null }))}>
+                      {t('useOld', { old: `${formatINR(warn.saved.unitPricePaise)}/${warn.saved.unit}` })}
+                    </button>
+                    <button className="btn-ghost py-2" onClick={() => patch(r.key, (x) => ({ ...x, ackedPaise: warn.now }))}>
+                      {t('keepNew', { now: `${formatINR(Math.round(warn.now))}/${r.unit || warn.saved.unit}` })}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findProduct, priceFor, productId, type Product } from './products'
+import { checkPrice, findProduct, priceFor, productId, type Product } from './products'
 
 const p = (name: string, unit: string, price: number, uses = 1): Product => ({
   id: productId(name, unit), name, normalizedName: name.toLowerCase(), unit, unitPricePaise: price, uses, updatedAt: 1,
@@ -27,5 +27,13 @@ describe('product memory', () => {
   })
   it('handles fractional quantities', () => {
     expect(priceFor(p('Sugar', 'kg', 4500), 0.5)).toBe(2250)
+  })
+  it('checks entered price against the saved price', () => {
+    expect(checkPrice(6000, 6000)).toBe('ok')
+    expect(checkPrice(6000, 6020)).toBe('ok') // tiny rounding
+    expect(checkPrice(6000, 6500)).toBe('changed')
+    expect(checkPrice(6000, 5000)).toBe('changed')
+    expect(checkPrice(6000, 60000)).toBe('very-different') // extra zero
+    expect(checkPrice(6000, 600)).toBe('very-different') // missing zero
   })
 })
