@@ -8,14 +8,14 @@ const entry = (overrides: Partial<Entry>): Entry => ({
 })
 
 describe('ledger calculations', () => {
-  it('calculates outstanding balance from signed entries', () => {
+  it('calculates an outstanding balance from signed records', () => {
     expect(balanceOf([entry({ amountPaise: 12000 }), entry({ id: 'p', type: 'payment', sign: -1, amountPaise: 2000 })])).toBe(10000)
   })
-  it('marks payments as paid up only when a payment or history exists', () => {
+  it('marks a customer as paid up only when there is history and no amount left', () => {
     expect(isPaidUp(customerStats([entry({ type: 'bill' })]).get('customer'))).toBe(false)
     expect(isPaidUp(customerStats([entry({ type: 'bill' }), entry({ id: 'p', type: 'payment', sign: -1 })]).get('customer'))).toBe(true)
   })
-  it('ignores a payment reversed later when selecting last payment date', () => {
+  it('does not treat a cancelled payment as the last payment', () => {
     const stats = customerStats([
       entry({ id: 'bill', type: 'bill' }),
       entry({ id: 'pay', type: 'payment', sign: -1, occurredAt: 2 }),
@@ -23,17 +23,24 @@ describe('ledger calculations', () => {
     ])
     expect(stats.get('customer')?.lastPaymentAt).toBeNull()
   })
-  it('calculates running balances in date order', () => {
+  it('calculates running balances from oldest to newest', () => {
     expect(withRunning([
       entry({ id: 'later', occurredAt: 20, amountPaise: 2000 }),
       entry({ id: 'earlier', occurredAt: 10, amountPaise: 1000 }),
     ]).map((item) => item.running)).toEqual([1000, 3000])
   })
-  it('counts a cancelled bill as zero in today's sales', () => {
+  it('removes a cancelled bill from today sales', () => {
     const now = Date.now()
     expect(todayTotals([
       entry({ id: 'bill', occurredAt: now }),
       entry({ id: 'reverse', type: 'reversal', sign: -1, reverses: 'bill', occurredAt: now + 1 }),
     ]).sales).toBe(0)
+  })
+  it('removes a cancelled payment from today collections', () => {
+    const now = Date.now()
+    expect(todayTotals([
+      entry({ id: 'payment', type: 'payment', sign: -1, occurredAt: now }),
+      entry({ id: 'reverse', type: 'reversal', sign: 1, reverses: 'payment', occurredAt: now + 1 }),
+    ]).payments).toBe(0)
   })
 })
