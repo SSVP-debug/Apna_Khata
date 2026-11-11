@@ -4,7 +4,6 @@ const en = {
   navHome: 'Home', navCustomers: 'Customers', navSettings: 'Settings',
   syncOk: '✓ Synced', syncOffline: '⚠ Offline', syncPending: '⏳ {n} pending',
   todaySales: 'Sales today', todayCollected: 'Payments received today',
-  todaySales: 'Sales today', todayCollected: 'Payments received today',
   owingCount: 'Customers owing', tapList: 'Tap to see list', totalOwed: 'Total Amount Owed',
   addCustomerBtn: '+ Add Customer', recent: 'Recent Activity', noActivity: 'No activity yet.',
   syncStatus: 'Sync status', allSynced: '✓ All synced', waiting: '{n} waiting to sync',
@@ -90,7 +89,6 @@ export type Key = keyof typeof en
 const te: Record<Key, string> = {
   navHome: 'హోమ్', navCustomers: 'కస్టమర్లు', navSettings: 'సెట్టింగ్స్',
   syncOk: '✓ సింక్ అయింది', syncOffline: '⚠ ఆఫ్‌లైన్', syncPending: '⏳ {n} పెండింగ్',
-  todaySales: 'ఈ రోజు అమ్మకాలు', todayCollected: 'ఈ రోజు వచ్చిన చెల్లింపులు',
   todaySales: 'ఈ రోజు అమ్మకాలు', todayCollected: 'ఈ రోజు వచ్చిన చెల్లింపులు',
   owingCount: 'బాకీ ఉన్న కస్టమర్లు', tapList: 'జాబితా చూడటానికి నొక్కండి', totalOwed: 'మొత్తం బాకీ',
   addCustomerBtn: '+ కస్టమర్‌ను జోడించండి', recent: 'ఇటీవలి లావాదేవీలు', noActivity: 'ఇంకా ఏమీ లేదు.',
