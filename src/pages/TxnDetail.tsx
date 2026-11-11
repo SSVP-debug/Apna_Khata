@@ -16,10 +16,10 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
   const e = entries.find((x) => x.id === id)
   if (!e) return <p className="text-slate-500">{t('loading')}</p>
   const c = findCustomer(customers, e.customerId)
-  // A sale paid on the spot is a bill + its payment; they are shown, shared and cancelled together.
   const bill = e.type === 'payment' && e.billId ? (entries.find((x) => x.id === e.billId) ?? e) : e
   const salePayment = bill.settledBy ? entries.find((x) => x.type === 'payment' && x.billId === bill.id) : undefined
-  const cancelled = entries.some((x) => x.reverses === e.id || x.reverses === bill.id)
+  const originals = bill.settledBy && salePayment ? [bill, salePayment] : [bill]
+  const cancelled = originals.every((original) => entries.some((entry) => entry.reverses === original.id))
   const canCancel = (bill.type === 'bill' || bill.type === 'payment') && !cancelled
   const canShare = bill.type === 'bill' && !!bill.items?.length && !cancelled
 
@@ -35,12 +35,12 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
         {cancelled && <p className="mt-1 font-semibold text-amber-700">{t('txnCancelled')}</p>}
         {e.description && <p className="mt-1 text-slate-600">{e.description}</p>}
       </div>
-      {e.items && e.items.length > 0 && (
+      {bill.items && bill.items.length > 0 && (
         <div className="card">
           <div className="grid grid-cols-[1.2fr_1fr_0.8fr] gap-2 border-b pb-1 text-sm font-bold text-slate-600">
             <span>{t('colItem')}</span><span>{t('colQty')}</span><span className="text-right">{t('colAmount')}</span>
           </div>
-          {e.items.map((i, k) => (
+          {bill.items.map((i, k) => (
             <div key={k} className="grid grid-cols-[1.2fr_1fr_0.8fr] gap-2 border-b border-slate-100 py-2 last:border-0">
               <span className="font-semibold">{i.name}</span><span>{i.qty} {i.unit}</span>
               <span className="text-right font-semibold">{formatINR(i.lineTotalPaise)}</span>
@@ -57,8 +57,8 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
       {canCancel && (
         <button className="btn-ghost text-red-700" onClick={() => {
           if (confirm(t('cancelConfirm', { label: entryLabel(bill, t), amt: formatINR(bill.amountPaise) }))) {
-            if (bill.settledBy) reverseSale(shopId, uid, bill, salePayment)
-            else reverseEntry(shopId, uid, bill)
+            if (bill.settledBy) reverseSale(shopId, uid, bill, salePayment, entries)
+            else reverseEntry(shopId, uid, bill, entries)
             go({ name: 'customer', id: e.customerId })
           }
         }}>{t('cancelEntry')}</button>
