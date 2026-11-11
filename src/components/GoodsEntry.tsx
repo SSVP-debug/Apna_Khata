@@ -135,6 +135,14 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
     return items
   }
 
+  /** Close the popup and return to a clean, empty form at the top of the page. */
+  function finish() {
+    setSharing(false)
+    setSaved(null)
+    setDone('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   /** Save the bill: on credit (Khata) or paid on the spot (cash/UPI/other). */
   function save(settledBy?: 'cash' | 'upi' | 'other') {
     const items = prepare()
@@ -158,15 +166,20 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
   return (
     <div className="card flex flex-col gap-4">
       <h2 className="text-xl font-bold">{t('addGoods')}</h2>
-      {done && (
-        <div className="flex flex-col gap-2 rounded-lg bg-green-100 p-3">
-          <p className="text-lg font-semibold text-green-800">✓ {done}</p>
-          {saved && <button className="btn-primary" onClick={() => setSharing(true)}>📲 {t('shareBill')}</button>}
+      {/* After saving: a popup that is always on screen, so the owner never has to scroll to find "Share". */}
+      {saved && !sharing && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/50 sm:items-center">
+          <div className="flex w-full max-w-md flex-col gap-3 rounded-t-2xl bg-white p-5 sm:rounded-2xl">
+            <p className="text-center text-5xl">✅</p>
+            <p className="text-center text-xl font-semibold text-green-800">{done}</p>
+            <button className="btn-primary py-4 text-xl" onClick={() => setSharing(true)}>📲 {t('shareBill')}</button>
+            <button className="btn-ghost" onClick={finish}>{t('done')}</button>
+          </div>
         </div>
       )}
       {sharing && saved && (() => {
         const cust = findCustomer(customers, saved.customerId)
-        return cust ? <BillShare bill={saved} customer={cust} onClose={() => setSharing(false)} /> : null
+        return cust ? <BillShare bill={saved} customer={cust} onClose={finish} /> : null
       })()}
 
       <MicButton hint={t('tapAllGoods')} onText={addFromText} />

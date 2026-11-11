@@ -51,7 +51,7 @@ export default function BillShare({ bill, customer, onClose }: { bill: Entry; cu
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/50 sm:items-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 sm:items-center">
       <div className="flex max-h-[92vh] w-full max-w-md flex-col gap-3 overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl">
         <h2 className="text-2xl font-bold">{t('shareTitle')}</h2>
 

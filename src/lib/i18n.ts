@@ -78,7 +78,7 @@ const en = {
   shopSection: 'Shop details (shown on bills)', shopNamePh: 'Shop name', shopPhonePh: 'Shop phone', shopSaved: 'Saved', billLang: 'Bill language',
   billNo: 'Bill No', billDate: 'Date', billCustomer: 'Customer', billTotal: 'Total', billPaid: 'Paid',
   billOnKhata: 'Added to Khata', billBalance: 'Balance due', billThanks: 'Thank you! Visit again.', paidAtSale: 'Paid at sale',
-  noSalesYet: 'No sales yet.', close: 'Close', sendFailedHint: 'WhatsApp opens in a new window. Press Send there.',
+  noSalesYet: 'No sales yet.', close: 'Close', done: 'Done', sendFailedHint: 'WhatsApp opens in a new window. Press Send there.',
 }
 
 export type Key = keyof typeof en
@@ -161,7 +161,7 @@ const te: Record<Key, string> = {
   shopSection: 'షాపు వివరాలు (బిల్లుపై కనిపిస్తాయి)', shopNamePh: 'షాపు పేరు', shopPhonePh: 'షాపు ఫోన్', shopSaved: 'సేవ్ అయింది', billLang: 'బిల్లు భాష',
   billNo: 'బిల్లు నం', billDate: 'తేదీ', billCustomer: 'కస్టమర్', billTotal: 'మొత్తం', billPaid: 'చెల్లించారు',
   billOnKhata: 'ఖాతాలో జోడించబడింది', billBalance: 'మొత్తం బాకీ', billThanks: 'ధన్యవాదాలు! మళ్ళీ రండి.', paidAtSale: 'అమ్మకం సమయంలో చెల్లించారు',
-  noSalesYet: 'ఇంకా అమ్మకాలు లేవు.', close: 'మూసివేయి', sendFailedHint: 'వాట్సాప్ కొత్త విండోలో తెరుచుకుంటుంది. అక్కడ Send నొక్కండి.',
+  noSalesYet: 'ఇంకా అమ్మకాలు లేవు.', close: 'మూసివేయి', done: 'పూర్తయింది', sendFailedHint: 'వాట్సాప్ కొత్త విండోలో తెరుచుకుంటుంది. అక్కడ Send నొక్కండి.',
 }
 
 export const dictionaries: Record<Lang, Record<Key, string>> = { en, te }
