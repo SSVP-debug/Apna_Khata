@@ -16,6 +16,7 @@ export default function WholesaleOrder({ go }: { go: (v: View) => void }) {
   const storageKey = `apna-khata-wholesale-order:${shopId}`
   const [phone, setPhone] = useState('')
   const [items, setItems] = useState<DraftItem[]>([])
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -27,14 +28,19 @@ export default function WholesaleOrder({ go }: { go: (v: View) => void }) {
       setItems(Array.isArray(draft.items) ? draft.items.filter((item) =>
         item && typeof item.id === 'string' && typeof item.name === 'string'
         && typeof item.qty === 'string' && typeof item.unit === 'string') : [])
-    } catch { localStorage.removeItem(storageKey) }
+    } catch {
+      // Ignore an unreadable local draft and keep the order form available.
+    } finally {
+      setLoaded(true)
+    }
   }, [storageKey])
 
   useEffect(() => {
+    if (!loaded) return
     try { localStorage.setItem(storageKey, JSON.stringify({ phone, items } satisfies Draft)) } catch {
       // The order remains usable if browser storage is unavailable.
     }
-  }, [storageKey, phone, items])
+  }, [loaded, storageKey, phone, items])
 
   function addSpokenGoods(text: string) {
     const parsed = parseItems(text)
