@@ -8,6 +8,7 @@ import { WALK_IN_ID, findCustomer } from '../lib/walkin'
 import type { View } from '../App'
 import { useLang } from '../lib/langContext'
 import { displayName } from '../lib/names'
+import { todayTotals } from '../lib/ledger'
 
 export default function Dashboard({ go }: { go: (v: View) => void }) {
   const { entries, customers, pending, online, lastSync } = useStore()
@@ -17,6 +18,7 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
   const owing = [...bal.values()].filter((v) => v > 0)
   const totalOwed = owing.reduce((s, v) => s + v, 0)
   const recent = [...entries].sort((a, b) => b.occurredAt - a.occurredAt).slice(0, 8)
+  const daily = todayTotals(entries)
   const name = (id: string) => (() => { const c = findCustomer(customers, id); return c ? displayName(c, lang) : '—' })()
 
   return (
@@ -29,6 +31,16 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
       <div className="card">
         <p className="text-lg text-slate-600">{t('totalOwed')}</p>
         <p className="text-5xl font-bold text-red-700">{formatINR(totalOwed)}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="card">
+          <p className="text-sm text-slate-600">{t('todaySales')}</p>
+          <p className="text-2xl font-bold">{formatINR(daily.sales)}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-slate-600">{t('todayCollected')}</p>
+          <p className="text-2xl font-bold">{formatINR(daily.payments)}</p>
+        </div>
       </div>
       <button className="btn-primary py-5 text-2xl" onClick={() => setAdding(true)}>{t('addCustomerBtn')}</button>
       <button className="rounded-lg border-2 border-teal-700 bg-white px-4 py-4 text-left active:scale-95"
