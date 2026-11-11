@@ -19,7 +19,7 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
   const bill = e.type === 'payment' && e.billId ? (entries.find((x) => x.id === e.billId) ?? e) : e
   const salePayment = bill.settledBy ? entries.find((x) => x.type === 'payment' && x.billId === bill.id) : undefined
   const originals = bill.settledBy && salePayment ? [bill, salePayment] : [bill]
-  const cancelled = originals.every((original) => entries.some((entry) => entry.reverses === original.id))
+  const cancelled = originals.some((original) => entries.some((entry) => entry.reverses === original.id))
   const canCancel = (bill.type === 'bill' || bill.type === 'payment') && !cancelled
   const canShare = bill.type === 'bill' && !!bill.items?.length && !cancelled
 
