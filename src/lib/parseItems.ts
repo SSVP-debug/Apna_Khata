@@ -1,11 +1,5 @@
-export interface ParsedItem {
-  name: string
-  qty: number
-  unit: string
-  amountPaise: number | null
-}
+export interface ParsedItem { name: string; qty: number; unit: string; amountPaise: number | null }
 
-// Number words. Telugu entries are experimental until tested on real devices.
 const NUM_WORDS: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
@@ -17,115 +11,77 @@ const NUM_WORDS: Record<string, number> = {
   వంద: 100, వందల: 100, వందలు: 100, నూరు: 100, నూట: 100, వెయ్యి: 1000, వేలు: 1000, వేల: 1000,
   అర: 0.5, పావు: 0.25, ముప్పావు: 0.75, ఒకటిన్నర: 1.5, రెండున్నర: 2.5, మూడున్నర: 3.5,
 }
-
 const UNITS: Record<string, string> = {
   kg: 'kg', kgs: 'kg', kilo: 'kg', kilos: 'kg', kilogram: 'kg', kilograms: 'kg',
-  g: 'g', gm: 'g', gram: 'g', grams: 'g',
-  litre: 'litre', litres: 'litre', liter: 'litre', liters: 'litre', ltr: 'litre', l: 'litre',
-  packet: 'packet', packets: 'packet', pkt: 'packet',
-  piece: 'pcs', pieces: 'pcs', pc: 'pcs', pcs: 'pcs',
-  dozen: 'dozen', bottle: 'bottle', bottles: 'bottle', box: 'box', boxes: 'box', bag: 'bag', bags: 'bag',
+  g: 'g', gm: 'g', gram: 'g', grams: 'g', litre: 'litre', litres: 'litre', liter: 'litre',
+  liters: 'litre', ltr: 'litre', l: 'litre', packet: 'packet', packets: 'packet', pkt: 'packet',
+  piece: 'pcs', pieces: 'pcs', pc: 'pcs', pcs: 'pcs', dozen: 'dozen', bottle: 'bottle',
+  bottles: 'bottle', box: 'box', boxes: 'box', bag: 'bag', bags: 'bag',
   కిలో: 'kg', కిలోలు: 'kg', కిలోల: 'kg', కేజీ: 'kg', కేజీలు: 'kg', కేజీల: 'kg',
-  గ్రాము: 'g', గ్రాములు: 'g', గ్రాముల: 'g',
-  లీటర్: 'litre', లీటరు: 'litre', లీటర్లు: 'litre', లీటర్ల: 'litre',
-  ప్యాకెట్: 'packet', ప్యాకెట్లు: 'packet', ప్యాకెట్ల: 'packet',
-  డజను: 'dozen', డజన్: 'dozen', సీసా: 'bottle', సీసాలు: 'bottle',
+  గ్రాము: 'g', గ్రాములు: 'g', గ్రాముల: 'g', లీటర్: 'litre', లీటరు: 'litre',
+  లీటర్లు: 'litre', లీటర్ల: 'litre', ప్యాకెట్: 'packet', ప్యాకెట్లు: 'packet',
+  ప్యాకెట్ల: 'packet', డజను: 'dozen', డజన్: 'dozen', సీసా: 'bottle', సీసాలు: 'bottle',
 }
-
 const FILLER = new Set(['of', 'rupees', 'rupee', 'rs', 'inr', 'రూపాయలు', 'రూపాయి', 'రూపాయల', 'రూ'])
 const TELUGU_DIGITS = '౦౧౨౩౪౫౬౭౮౯'
+const isDigit = (token: string) => /^\d+(\.\d+)?$/.test(token)
+interface Token { text: string; value: number | null; wordNumber: boolean }
 
-const isDigit = (t: string) => /^\d+(\.\d+)?$/.test(t)
-
-interface Tok {
-  t: string
-  n: number | null
-  words: boolean // number came from spoken words (not typed digits)
-}
-
-/** "నూట ఇరవై" -> 120, "two hundred fifty" -> 250 */
-function combine(run: number[]): number {
-  let total = 0
-  let cur = 0
-  for (const v of run) {
-    if (v === 100) cur = (cur || 1) * 100
-    else if (v === 1000) { total += (cur || 1) * 1000; cur = 0 }
-    else cur += v
+function combineNumbers(values: number[]): number {
+  let total = 0, current = 0
+  for (const value of values) {
+    if (value === 100) current = (current || 1) * 100
+    else if (value === 1000) { total += (current || 1) * 1000; current = 0 }
+    else current += value
   }
-  return total + cur
+  return total + current
 }
 
-function lex(words: string[]): Tok[] {
-  const out: Tok[] = []
-  let i = 0
-  while (i < words.length) {
-    const w = words[i]
-    if (isDigit(w)) { out.push({ t: w, n: Number(w), words: false }); i++; continue }
-    if (NUM_WORDS[w] !== undefined) {
+function tokenize(words: string[]): Token[] {
+  const result: Token[] = []
+  for (let i = 0; i < words.length;) {
+    if (isDigit(words[i])) { result.push({ text: words[i], value: Number(words[i]), wordNumber: false }); i++; continue }
+    if (NUM_WORDS[words[i]] !== undefined) {
       let j = i
-      const run: number[] = []
-      while (j < words.length && !isDigit(words[j]) && NUM_WORDS[words[j]] !== undefined) run.push(NUM_WORDS[words[j++]])
-      if (run.every(Number.isInteger)) out.push({ t: words.slice(i, j).join(' '), n: combine(run), words: true })
-      else for (let k = i; k < j; k++) out.push({ t: words[k], n: NUM_WORDS[words[k]], words: true })
-      i = j
-      continue
+      const values: number[] = []
+      while (j < words.length && !isDigit(words[j]) && NUM_WORDS[words[j]] !== undefined) values.push(NUM_WORDS[words[j++]])
+      if (values.every(Number.isInteger)) result.push({ text: words.slice(i, j).join(' '), value: combineNumbers(values), wordNumber: true })
+      else for (let k = i; k < j; k++) result.push({ text: words[k], value: NUM_WORDS[words[k]], wordNumber: true })
+      i = j; continue
     }
-    out.push({ t: w, n: null, words: false })
-    i++
+    result.push({ text: words[i], value: null, wordNumber: false }); i++
   }
-  return out
+  return result
 }
 
-/** Rules-based parser. Never guesses amounts: a missing amount is returned as null. */
-export function parseItems(text: string): ParsedItem[] {
-  const normalized = text
-    .toLowerCase()
-    .replace(/[౦-౯]/g, (d) => String(TELUGU_DIGITS.indexOf(d)))
+/** Parses common shop phrases. Unclear or incomplete values stay blank for the owner to check. */
+export function parseItems(input: string): ParsedItem[] {
+  const normalized = input.toLowerCase().replace(/[౦-౯]/g, (digit) => String(TELUGU_DIGITS.indexOf(digit)))
   const segments = normalized.split(/[,;\n]+|\s+and\s+|\s+then\s+|\s+మరియు\s+|\s+ఇంకా\s+/)
-  const out: ParsedItem[] = []
-
-  for (const seg of segments) {
-    const cleaned = seg
-      .replace(/₹/g, ' ')
-      .replace(/(\d)([a-z])/g, '$1 $2')
-      .replace(/([a-z])(\d)/g, '$1 $2')
+  const parsed: ParsedItem[] = []
+  for (const segment of segments) {
+    const cleaned = segment.replace(/₹/g, ' ').replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2')
       .replace(/[^\p{L}\p{M}\p{N}.\s]/gu, ' ')
-    const words = cleaned.split(/\s+/).map((t) => t.replace(/^\.+|\.+$/g, '')).filter(Boolean)
+    const words = cleaned.split(/\s+/).map((word) => word.replace(/^\.+|\.+$/g, '')).filter(Boolean)
     if (!words.length || words[0] === 'total' || words[0] === 'మొత్తం') continue
-
-    const toks = lex(words)
-    const numIdx = toks.map((k, i) => (k.n !== null ? i : -1)).filter((i) => i >= 0)
-
-    let amountIdx = -1
-    let qtyIdx = -1
-    if (numIdx.length >= 2) {
-      amountIdx = numIdx[numIdx.length - 1]
-      qtyIdx = numIdx[0]
-    } else if (numIdx.length === 1) {
-      const i = numIdx[0]
-      const k = toks[i]
-      const nextIsUnit = !!UNITS[toks[i + 1]?.t]
-      if (nextIsUnit || (k.words && (k.n ?? 0) <= 20)) qtyIdx = i
-      else amountIdx = i
+    const tokens = tokenize(words)
+    const numberIndexes = tokens.map((token, index) => token.value !== null ? index : -1).filter((index) => index >= 0)
+    let amountIndex = -1, quantityIndex = -1
+    if (numberIndexes.length >= 2) { quantityIndex = numberIndexes[0]; amountIndex = numberIndexes[numberIndexes.length - 1] }
+    else if (numberIndexes.length === 1) {
+      const index = numberIndexes[0]
+      if (UNITS[tokens[index + 1]?.text] || (tokens[index].wordNumber && (tokens[index].value ?? 0) <= 20)) quantityIndex = index
+      else amountIndex = index
     }
-
-    const qtyRaw = qtyIdx >= 0 ? (toks[qtyIdx].n ?? 1) : 1
-    const qty = qtyRaw > 0 ? Math.round(qtyRaw * 100) / 100 : 1
-    const unitIdx = toks.findIndex((k, i) => i !== qtyIdx && i !== amountIdx && k.n === null && UNITS[k.t])
-    const unit = unitIdx >= 0 ? UNITS[toks[unitIdx].t] : ''
-
-    const nameTokens = toks
-      .filter((k, i) => k.n === null && i !== unitIdx && !FILLER.has(k.t))
-      .map((k) => k.t)
-    if (!nameTokens.length && amountIdx === -1 && qtyIdx === -1) continue
-    const name = nameTokens.join(' ') || 'Item'
-
-    out.push({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      qty,
-      unit,
-      amountPaise: amountIdx >= 0 ? Math.round((toks[amountIdx].n ?? 0) * 100) : null,
-    })
+    const quantity = quantityIndex >= 0 ? tokens[quantityIndex].value : 1
+    if (quantity === null || quantity <= 0 || !Number.isFinite(quantity)) continue
+    const unitIndex = tokens.findIndex((token, index) => index !== quantityIndex && index !== amountIndex && token.value === null && UNITS[token.text])
+    const unit = unitIndex >= 0 ? UNITS[tokens[unitIndex].text] : ''
+    const name = tokens.filter((token, index) => token.value === null && index !== unitIndex && !FILLER.has(token.text)).map((token) => token.text).join(' ').trim()
+    if (!name) continue
+    const amount = amountIndex >= 0 ? tokens[amountIndex].value : null
+    const amountPaise = amount !== null && Number.isFinite(amount) && amount > 0 && Number.isSafeInteger(Math.round(amount * 100)) ? Math.round(amount * 100) : null
+    parsed.push({ name: name.charAt(0).toUpperCase() + name.slice(1), qty: Math.round(quantity * 100) / 100, unit, amountPaise })
   }
-  return out
+  return parsed
 }

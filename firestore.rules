@@ -1,16 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     function isOwner(shopId) {
       return request.auth != null && request.auth.uid == shopId;
     }
 
-    // Shop profile (printed on bills).
     match /shops/{shopId} {
       allow read: if isOwner(shopId);
       allow create, update: if isOwner(shopId)
-        && request.resource.data.keys().hasOnly(['name','phone'])
+        && request.resource.data.keys().hasOnly(['name', 'phone'])
         && request.resource.data.name is string && request.resource.data.name.size() <= 100
         && request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
       allow delete: if false;
@@ -19,50 +17,70 @@ service cloud.firestore {
     match /shops/{shopId}/customers/{customerId} {
       allow read: if isOwner(shopId);
       allow create, update: if isOwner(shopId)
-        && request.resource.data.keys().hasOnly(['name','nameEn','nameTe','phone','normalizedPhone','notes','isActive','createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'nameEn', 'nameTe', 'phone', 'normalizedPhone', 'notes', 'isActive', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
         && (!('nameEn' in request.resource.data) || (request.resource.data.nameEn is string && request.resource.data.nameEn.size() <= 100))
         && (!('nameTe' in request.resource.data) || (request.resource.data.nameTe is string && request.resource.data.nameTe.size() <= 100))
-        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
-        && request.resource.data.phone is string
-        && request.resource.data.normalizedPhone is string
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20
+        && request.resource.data.normalizedPhone is string && request.resource.data.normalizedPhone.size() <= 20
         && request.resource.data.notes is string && request.resource.data.notes.size() <= 500
-        && request.resource.data.isActive is bool
-        && request.resource.data.createdAt is number;
+        && request.resource.data.isActive is bool && request.resource.data.createdAt is number;
       allow delete: if false;
     }
 
-    // Append-only ledger: no update, no delete. Corrections are new 'reversal' entries.
     match /shops/{shopId}/ledger/{entryId} {
       allow read: if isOwner(shopId);
       allow create: if isOwner(shopId)
-        && request.resource.data.keys().hasOnly(['customerId','type','sign','amountPaise','method','description','mode','items','reverses','settledBy','billId','occurredAt','createdBy'])
-        && (!('settledBy' in request.resource.data) || request.resource.data.settledBy in ['cash','upi','other'])
-        && (!('billId' in request.resource.data) || request.resource.data.billId is string)
+        && request.resource.data.keys().hasOnly(['customerId', 'type', 'sign', 'amountPaise', 'method', 'description', 'mode', 'items', 'reverses', 'settledBy', 'billId', 'occurredAt', 'createdBy'])
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.customerId is string
         && existsAfter(/databases/$(database)/documents/shops/$(shopId)/customers/$(request.resource.data.customerId))
         && request.resource.data.amountPaise is int && request.resource.data.amountPaise > 0
         && request.resource.data.occurredAt is number
         && request.resource.data.sign in [1, -1]
-        && request.resource.data.type in ['opening','bill','payment','reversal']
+        && request.resource.data.type in ['opening', 'bill', 'payment', 'reversal']
+        && (!('method' in request.resource.data) || request.resource.data.method in ['cash', 'upi', 'other', 'bank'])
+        && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 500))
+        && (!('mode' in request.resource.data) || request.resource.data.mode in ['quick', 'itemized'])
+        && (!('settledBy' in request.resource.data) || request.resource.data.settledBy in ['cash', 'upi', 'other'])
+        && (!('billId' in request.resource.data) || request.resource.data.billId is string)
         && (
-          (request.resource.data.type in ['opening','bill'] && request.resource.data.sign == 1)
+          (request.resource.data.type == 'opening' && request.resource.data.sign == 1)
+          || (request.resource.data.type == 'bill' && request.resource.data.sign == 1)
           || (request.resource.data.type == 'payment' && request.resource.data.sign == -1)
-          || (request.resource.data.type == 'reversal' && request.resource.data.reverses is string)
+          || (request.resource.data.type == 'reversal'
+            && request.resource.data.reverses is string
+            && exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses))
+            && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.customerId == request.resource.data.customerId
+            && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.amountPaise == request.resource.data.amountPaise
+            && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.sign == -request.resource.data.sign
+            && existsAfter(/databases/$(database)/documents/shops/$(shopId)/reversalMarkers/$(request.resource.data.reverses)) )
         );
-      // Idempotent retry: re-sending an identical entry is a harmless no-op; any change is rejected.
       allow update: if isOwner(shopId) && request.resource.data == resource.data;
       allow delete: if false;
     }
 
-    // Remembered item prices (not financial records, so they may be edited and deleted).
+    match /shops/{shopId}/reversalMarkers/{markerId} {
+      allow read: if isOwner(shopId);
+      allow create: if isOwner(shopId)
+        && markerId.size() > 0
+        && request.resource.data.keys().hasOnly(['originalId', 'createdBy', 'createdAt'])
+        && request.resource.data.originalId is string
+        && markerId == request.resource.data.originalId
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt is number
+        && exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId))
+        && getAfter(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId)).data.customerId is string;
+      allow update, delete: if false;
+    }
+
     match /shops/{shopId}/products/{productId} {
       allow read: if isOwner(shopId);
       allow create, update: if isOwner(shopId)
-        && request.resource.data.keys().hasOnly(['name','normalizedName','unit','unitPricePaise','uses','updatedAt'])
+        && request.resource.data.keys().hasOnly(['name', 'normalizedName', 'unit', 'unitPricePaise', 'uses', 'updatedAt'])
         && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
-        && request.resource.data.normalizedName is string
-        && request.resource.data.unit is string && request.resource.data.unit.size() <= 20
+        && request.resource.data.normalizedName is string && request.resource.data.normalizedName.size() <= 100
+        && request.resource.data.unit is string && request.resource.data.unit.size() > 0 && request.resource.data.unit.size() <= 20
         && request.resource.data.unitPricePaise is int && request.resource.data.unitPricePaise > 0 && request.resource.data.unitPricePaise <= 100000000
         && request.resource.data.uses is int && request.resource.data.uses >= 0
         && request.resource.data.updatedAt is number;

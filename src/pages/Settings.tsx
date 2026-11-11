@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useStore } from '../lib/storeContext'
-import { toCSV } from '../lib/ledger'
+import { toCSV, toJSONBackup } from '../lib/ledger'
 import { useLang } from '../lib/langContext'
 import { saveShop } from '../lib/db'
 import { findCustomer } from '../lib/walkin'
@@ -32,28 +32,44 @@ function ShopDetails({ shopId, shop }: { shopId: string; shop: { name: string; p
 }
 
 export default function Settings({ go }: { go: (v: View) => void }) {
-  const { shopId, shop, entries, customers, pending, online, lastSync } = useStore()
+  const { shopId, shop, entries, customers, products, pending, online, lastSync } = useStore()
   const { t, lang, setLang } = useLang()
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null)
 
   useEffect(() => {
-    const h = (e: Event) => { e.preventDefault(); setInstallEvt(e as InstallEvent) }
-    window.addEventListener('beforeinstallprompt', h)
-    return () => window.removeEventListener('beforeinstallprompt', h)
+    const handler = (event: Event) => { event.preventDefault(); setInstallEvt(event as InstallEvent) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
+  function downloadFile(filename: string, content: string, type: string) {
+    const url = URL.createObjectURL(new Blob([content], { type }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   function exportCSV() {
-    const name = (id: string) => (() => { const c = findCustomer(customers, id); return c ? displayName(c, 'en') : '' })()
-    const rows = [...entries].sort((a, b) => a.occurredAt - b.occurredAt).map((e) => [
-      new Date(e.occurredAt).toISOString().slice(0, 16).replace('T', ' '), name(e.customerId), e.type, e.method ?? '',
-      e.sign === 1 ? (e.amountPaise / 100).toFixed(2) : '', e.sign === -1 ? (e.amountPaise / 100).toFixed(2) : '', e.description ?? '',
+    const name = (id: string) => {
+      const customer = findCustomer(customers, id)
+      return customer ? displayName(customer, 'en') : ''
+    }
+    const rows = [...entries].sort((a, b) => a.occurredAt - b.occurredAt).map((entry) => [
+      new Date(entry.occurredAt).toISOString().slice(0, 16).replace('T', ' '),
+      name(entry.customerId), entry.type, entry.method ?? '',
+      entry.sign === 1 ? (entry.amountPaise / 100).toFixed(2) : '',
+      entry.sign === -1 ? (entry.amountPaise / 100).toFixed(2) : '',
+      entry.description ?? '',
     ])
     const csv = toCSV([['Date', 'Customer', 'Type', 'Method', 'Goods added (INR)', 'Payment (INR)', 'Note'], ...rows])
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    a.download = `apna-khata-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadFile(`apna-khata-${new Date().toISOString().slice(0, 10)}.csv`, csv, 'text/csv;charset=utf-8')
+  }
+
+  function exportBackup() {
+    const backup = toJSONBackup({ shop, customers, entries, products })
+    downloadFile(`apna-khata-backup-${new Date().toISOString().slice(0, 10)}.json`, backup, 'application/json')
   }
 
   return (
@@ -85,6 +101,7 @@ export default function Settings({ go }: { go: (v: View) => void }) {
           <p className="text-slate-600">{t('installHelp')}</p>
         )}
         <button className="btn-ghost" onClick={exportCSV}>{t('csv')}</button>
+        <button className="btn-ghost" onClick={exportBackup}>{t('backup')}</button>
       </div>
       <button className="btn-ghost text-red-700" onClick={() => signOut(auth)}>{t('logout')}</button>
     </div>

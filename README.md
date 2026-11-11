@@ -1,75 +1,37 @@
-# React + TypeScript + Vite
+# Apna Khata
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple digital Khata for small shops. Keep customer balances, record goods and payments, and share bills on WhatsApp. The app is designed for shop owners who want clear screens and simple steps.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Add and search customers.
+- Keep a separate Khata for each customer.
+- Add goods by speaking, typing or entering them one by one.
+- Record credit sales and payments.
+- Make quick bills for customers who pay immediately.
+- Remember common items and their prices.
+- Share a bill through WhatsApp.
+- Use English or Telugu.
+- Keep working with saved data when internet is unavailable and sync later.
 
-## React Compiler
+## Built with
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+React, TypeScript, Vite, Tailwind CSS, Firebase Authentication, Cloud Firestore and a Progressive Web App setup.
 
-## Expanding the ESLint configuration
+## Run it on your computer
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Install Node.js (use a supported current LTS version).
+2. Download this repository.
+3. Run `npm install`.
+4. Copy `.env.example` to `.env` and fill in your Firebase web app settings.
+5. Run `npm run dev`.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Check before publishing
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Run `npm run lint`, `npm test` and `npm run build`.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Important
 
-```
+The first sign-in needs internet. Voice input depends on the browser and may also need internet. Offline changes are saved on the current device and are sent to Firebase when the connection returns. Install the app from a supported browser.
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+This app is a shop record book. It does not connect to a bank or payment service and does not send WhatsApp messages by itself.

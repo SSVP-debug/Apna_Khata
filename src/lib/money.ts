@@ -1,31 +1,26 @@
 /** Parse "250" or "250.50" into integer paise. Returns null if invalid or <= 0. */
 export function parseRupees(input: string): number | null {
-  const s = input.trim()
-  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null
-  const [r, p = ''] = s.split('.')
-  const paise = Number(r) * 100 + Number(p.padEnd(2, '0'))
-  return paise > 0 ? paise : null
+  const value = input.trim()
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) return null
+  const [rupees, paise = ''] = value.split('.')
+  const amount = Number(rupees) * 100 + Number(paise.padEnd(2, '0'))
+  return Number.isSafeInteger(amount) && amount > 0 ? amount : null
 }
 
 export function formatINR(paise: number): string {
-  const neg = paise < 0
-  const abs = Math.abs(paise)
-  const txt = (abs / 100).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  return `${neg ? '-' : ''}₹${txt}`
+  const negative = paise < 0
+  const amount = Math.abs(paise)
+  const text = (amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${negative ? '-' : ''}₹${text}`
 }
 
-/** Digits only; drops +91 / 91 / leading 0 prefix; keeps last 10 digits. */
 export function normalizePhone(phone: string): string {
-  let d = phone.replace(/\D/g, '')
-  if (d.length === 12 && d.startsWith('91')) d = d.slice(2)
-  if (d.length === 11 && d.startsWith('0')) d = d.slice(1)
-  return d
+  let digits = phone.replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2)
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  return digits
 }
 
-/** qty (decimal) x unit price (paise) -> integer paise */
-export function lineTotal(qty: number, unitPricePaise: number): number {
-  return Math.round(qty * unitPricePaise)
+export function lineTotal(quantity: number, unitPricePaise: number): number {
+  return Math.round(quantity * unitPricePaise)
 }

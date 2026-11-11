@@ -15,6 +15,7 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
   const [lastSync, setLastSync] = useState<number | null>(getLastSync())
   const [pc, setPc] = useState(0)
   const [pe, setPe] = useState(0)
+  const [pp, setPp] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
 
   useEffect(() => {
@@ -39,8 +40,9 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
         setLastSync(now)
       }
     })
-    const u3 = onSnapshot(collection(db, 'shops', shopId, 'products'), (s: QuerySnapshot<DocumentData>) => {
+    const u3 = onSnapshot(collection(db, 'shops', shopId, 'products'), opts, (s: QuerySnapshot<DocumentData>) => {
       setProducts(s.docs.map((d) => ({ ...(d.data() as Omit<Product, 'id'>), id: d.id })))
+      setPp(s.docs.filter((d) => d.metadata.hasPendingWrites).length)
     })
     const u4 = onSnapshot(doc(db, 'shops', shopId), (s) => {
       const d = s.data() as { name?: string; phone?: string } | undefined
@@ -61,8 +63,8 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
   }, [shopId])
 
   const value = useMemo(
-    () => ({ shopId, uid, customers, entries, products, lastSync, shop, pending: pc + pe, online }),
-    [shopId, uid, customers, entries, products, lastSync, shop, pc, pe, online],
+    () => ({ shopId, uid, customers, entries, products, lastSync, shop, pending: pc + pe + pp, online }),
+    [shopId, uid, customers, entries, products, lastSync, shop, pc, pe, pp, online],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
