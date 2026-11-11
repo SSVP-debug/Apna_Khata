@@ -11,6 +11,7 @@ import TxnDetail from './pages/TxnDetail'
 import Settings from './pages/Settings'
 import type { CustomerFilter } from './pages/Customers'
 import Products from './pages/Products'
+import WholesaleOrder from './pages/WholesaleOrder'
 import { WALK_IN_ID } from './lib/walkin'
 import { useLang } from './lib/langContext'
 
@@ -21,6 +22,7 @@ export type View =
   | { name: 'txn'; id: string }
   | { name: 'settings' }
   | { name: 'products' }
+  | { name: 'wholesale' }
 
 function Shell() {
   const { pending, online } = useStore()
@@ -61,6 +63,7 @@ function Shell() {
         {view.name === 'txn' && <TxnDetail id={view.id} go={go} />}
         {view.name === 'settings' && <Settings go={go} />}
         {view.name === 'products' && <Products go={go} />}
+        {view.name === 'wholesale' && <WholesaleOrder go={go} />}
       </main>
       <nav className="fixed inset-x-0 bottom-0 border-t bg-white">
         <div className="mx-auto grid max-w-md grid-cols-3">
