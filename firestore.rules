@@ -54,7 +54,7 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.customerId == request.resource.data.customerId
             && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.amountPaise == request.resource.data.amountPaise
             && get(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses)).data.sign == -request.resource.data.sign
-            && !exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses + '-reversed')) )
+            && !existsAfter(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.reverses + '-reversed')) )
         );
       allow update: if isOwner(shopId) && request.resource.data == resource.data;
       allow delete: if false;
