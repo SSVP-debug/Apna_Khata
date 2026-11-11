@@ -1,5 +1,8 @@
 import { useStore } from '../lib/storeContext'
-import { reverseEntry } from '../lib/db'
+import { useState } from 'react'
+import { reverseEntry, reverseSale } from '../lib/db'
+import { findCustomer } from '../lib/walkin'
+import BillShare from '../components/BillShare'
 import { formatINR } from '../lib/money'
 import { entryLabel, formatWhen } from '../lib/labels'
 import type { View } from '../App'
@@ -9,11 +12,16 @@ import { displayName } from '../lib/names'
 export default function TxnDetail({ id, go }: { id: string; go: (v: View) => void }) {
   const { shopId, uid, entries, customers } = useStore()
   const { t, lang } = useLang()
+  const [sharing, setSharing] = useState(false)
   const e = entries.find((x) => x.id === id)
   if (!e) return <p className="text-slate-500">{t('loading')}</p>
-  const c = customers.find((x) => x.id === e.customerId)
-  const cancelled = entries.some((x) => x.reverses === e.id)
-  const canCancel = (e.type === 'bill' || e.type === 'payment') && !cancelled
+  const c = findCustomer(customers, e.customerId)
+  // A sale paid on the spot is a bill + its payment; they are shown, shared and cancelled together.
+  const bill = e.type === 'payment' && e.billId ? (entries.find((x) => x.id === e.billId) ?? e) : e
+  const salePayment = bill.settledBy ? entries.find((x) => x.type === 'payment' && x.billId === bill.id) : undefined
+  const cancelled = entries.some((x) => x.reverses === e.id || x.reverses === bill.id)
+  const canCancel = (bill.type === 'bill' || bill.type === 'payment') && !cancelled
+  const canShare = bill.type === 'bill' && !!bill.items?.length && !cancelled
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,10 +48,17 @@ export default function TxnDetail({ id, go }: { id: string; go: (v: View) => voi
           ))}
         </div>
       )}
+      {canShare && c && (
+        <>
+          <button className="btn-primary text-lg" onClick={() => setSharing(true)}>📲 {t('shareBill')}</button>
+          {sharing && <BillShare bill={bill} customer={c} onClose={() => setSharing(false)} />}
+        </>
+      )}
       {canCancel && (
         <button className="btn-ghost text-red-700" onClick={() => {
-          if (confirm(t('cancelConfirm', { label: entryLabel(e, t), amt: formatINR(e.amountPaise) }))) {
-            reverseEntry(shopId, uid, e)
+          if (confirm(t('cancelConfirm', { label: entryLabel(bill, t), amt: formatINR(bill.amountPaise) }))) {
+            if (bill.settledBy) reverseSale(shopId, uid, bill, salePayment)
+            else reverseEntry(shopId, uid, bill)
             go({ name: 'customer', id: e.customerId })
           }
         }}>{t('cancelEntry')}</button>

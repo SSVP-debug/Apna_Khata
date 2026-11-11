@@ -12,4 +12,8 @@ export function formatWhen(ms: number, lang: string = 'en'): string {
   return new Date(ms).toLocaleString(lang === 'te' ? 'te-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 }
 
+export function formatDay(ms: number, lang: string = 'en'): string {
+  return new Date(ms).toLocaleDateString(lang === 'te' ? 'te-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 export const normName = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()

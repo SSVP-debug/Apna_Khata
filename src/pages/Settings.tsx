@@ -4,6 +4,8 @@ import { auth } from '../lib/firebase'
 import { useStore } from '../lib/storeContext'
 import { toCSV } from '../lib/ledger'
 import { useLang } from '../lib/langContext'
+import { saveShop } from '../lib/db'
+import { findCustomer } from '../lib/walkin'
 import { formatWhen } from '../lib/labels'
 import type { View } from '../App'
 import { displayName } from '../lib/names'
@@ -12,8 +14,25 @@ interface InstallEvent extends Event {
   prompt(): Promise<void>
 }
 
+function ShopDetails({ shopId, shop }: { shopId: string; shop: { name: string; phone: string } }) {
+  const { t } = useLang()
+  const [name, setName] = useState(shop.name)
+  const [phone, setPhone] = useState(shop.phone)
+  const [saved, setSaved] = useState(false)
+  return (
+    <div className="card flex flex-col gap-2">
+      <p className="text-slate-600">{t('shopSection')}</p>
+      <input className="input" placeholder={t('shopNamePh')} value={name} onChange={(e) => { setName(e.target.value); setSaved(false) }} />
+      <input className="input" inputMode="tel" placeholder={t('shopPhonePh')} value={phone} onChange={(e) => { setPhone(e.target.value); setSaved(false) }} />
+      <button className="btn-primary" onClick={() => { saveShop(shopId, { name, phone }); setSaved(true) }}>
+        {saved ? '✓ ' + t('shopSaved') : t('save')}
+      </button>
+    </div>
+  )
+}
+
 export default function Settings({ go }: { go: (v: View) => void }) {
-  const { entries, customers, pending, online, lastSync } = useStore()
+  const { shopId, shop, entries, customers, pending, online, lastSync } = useStore()
   const { t, lang, setLang } = useLang()
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null)
 
@@ -24,7 +43,7 @@ export default function Settings({ go }: { go: (v: View) => void }) {
   }, [])
 
   function exportCSV() {
-    const name = (id: string) => (() => { const c = customers.find((x) => x.id === id); return c ? displayName(c, 'en') : '' })()
+    const name = (id: string) => (() => { const c = findCustomer(customers, id); return c ? displayName(c, 'en') : '' })()
     const rows = [...entries].sort((a, b) => a.occurredAt - b.occurredAt).map((e) => [
       new Date(e.occurredAt).toISOString().slice(0, 16).replace('T', ' '), name(e.customerId), e.type, e.method ?? '',
       e.sign === 1 ? (e.amountPaise / 100).toFixed(2) : '', e.sign === -1 ? (e.amountPaise / 100).toFixed(2) : '', e.description ?? '',
@@ -44,6 +63,7 @@ export default function Settings({ go }: { go: (v: View) => void }) {
         <p className="text-slate-600">{t('account')}</p>
         <p className="text-lg font-semibold">{auth.currentUser?.email}</p>
       </div>
+      <ShopDetails key={String(!!(shop.name || shop.phone))} shopId={shopId} shop={shop} />
       <div className="card flex flex-col gap-2">
         <p className="text-slate-600">{t('language')}</p>
         <div className="grid grid-cols-2 gap-2">

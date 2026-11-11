@@ -31,6 +31,8 @@ export interface Entry {
   mode?: 'quick' | 'itemized'
   items?: Item[]
   reverses?: string
+  settledBy?: 'cash' | 'upi' | 'other' // bill was paid on the spot with this method
+  billId?: string // on a payment: the bill it settled
   occurredAt: number
   createdBy: string
   pending?: boolean // client-only, not written to DB

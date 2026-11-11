@@ -4,6 +4,7 @@ import { balancesByCustomer } from '../lib/ledger'
 import { formatINR } from '../lib/money'
 import { entryLabel, formatWhen } from '../lib/labels'
 import AddCustomer from '../components/AddCustomer'
+import { WALK_IN_ID, findCustomer } from '../lib/walkin'
 import type { View } from '../App'
 import { useLang } from '../lib/langContext'
 import { displayName } from '../lib/names'
@@ -16,11 +17,11 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
   const owing = [...bal.values()].filter((v) => v > 0)
   const totalOwed = owing.reduce((s, v) => s + v, 0)
   const recent = [...entries].sort((a, b) => b.occurredAt - a.occurredAt).slice(0, 8)
-  const name = (id: string) => (() => { const c = customers.find((x) => x.id === id); return c ? displayName(c, lang) : '—' })()
+  const name = (id: string) => (() => { const c = findCustomer(customers, id); return c ? displayName(c, lang) : '—' })()
 
   return (
     <div className="flex flex-col gap-4">
-      <button className="card text-left" onClick={() => go({ name: 'customers', owingOnly: true })}>
+      <button className="card text-left" onClick={() => go({ name: 'customers', filter: 'owing' })}>
         <p className="text-lg text-slate-600">{t('owingCount')}</p>
         <p className="text-5xl font-bold">{owing.length}</p>
         <p className="text-sm text-teal-800 underline">{t('tapList')}</p>
@@ -30,6 +31,11 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
         <p className="text-5xl font-bold text-red-700">{formatINR(totalOwed)}</p>
       </div>
       <button className="btn-primary py-5 text-2xl" onClick={() => setAdding(true)}>{t('addCustomerBtn')}</button>
+      <button className="rounded-lg border-2 border-teal-700 bg-white px-4 py-4 text-left active:scale-95"
+        onClick={() => go({ name: 'customer', id: WALK_IN_ID })}>
+        <span className="block text-xl font-bold text-teal-800">{t('quickSale')}</span>
+        <span className="text-sm text-slate-600">{t('quickSaleHint')}</span>
+      </button>
 
       <div className="card">
         <h2 className="mb-2 text-xl font-bold">{t('recent')}</h2>

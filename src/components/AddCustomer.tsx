@@ -3,6 +3,7 @@ import { useStore } from '../lib/storeContext'
 import { addCustomer } from '../lib/db'
 import { normName } from '../lib/labels'
 import { allNames, displayName, variants } from '../lib/names'
+import { WALK_IN_ID } from '../lib/walkin'
 import type { Customer } from '../lib/types'
 import type { View } from '../App'
 import MicButton from './MicButton'
@@ -28,7 +29,7 @@ export default function AddCustomer({ onClose, go }: { onClose: () => void; go: 
     // Same person in either script counts as a duplicate (Ramesh = రమేష్).
     const v = variants(name)
     const mine = new Set([normName(name), normName(v.en), normName(v.te)])
-    const found = customers.find((c) => allNames(c).some((n) => mine.has(n)))
+    const found = customers.find((c) => c.id !== WALK_IN_ID && allNames(c).some((n) => mine.has(n)))
     if (found) return setExisting(found)
     create()
   }

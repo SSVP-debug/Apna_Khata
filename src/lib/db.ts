@@ -1,4 +1,5 @@
 import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore'
+import { WALK_IN_ID, walkInCustomer } from './walkin'
 import { productId, type Product } from './products'
 import { db } from './firebase'
 import { normalizePhone } from './money'
@@ -166,5 +167,88 @@ export function saveProduct(
 export function deleteProduct(shopId: string, id: string) {
   const batch = writeBatch(db)
   batch.delete(doc(productsCol(shopId), id))
+  fire(batch.commit())
+}
+
+/**
+ * Save an itemized bill. With `settledBy` the sale is paid on the spot: the bill and its payment are
+ * written together in ONE batch, so a sale can never be half-saved.
+ */
+export function addBill(
+  shopId: string,
+  uid: string,
+  input: {
+    customerId: string
+    items: Item[]
+    totalPaise: number
+    settledBy?: 'cash' | 'upi' | 'other'
+    createWalkIn?: boolean
+  },
+): Entry {
+  const now = Date.now()
+  const batch = writeBatch(db)
+  if (input.createWalkIn && input.customerId === WALK_IN_ID) {
+    batch.set(doc(customersCol(shopId), WALK_IN_ID), {
+      name: walkInCustomer.name,
+      nameEn: walkInCustomer.nameEn,
+      nameTe: walkInCustomer.nameTe,
+      phone: '',
+      normalizedPhone: '',
+      notes: '',
+      isActive: true,
+      createdAt: now,
+    })
+  }
+  const id = newId()
+  const bill: Omit<Entry, 'id' | 'pending'> = {
+    customerId: input.customerId,
+    type: 'bill',
+    sign: 1,
+    amountPaise: input.totalPaise,
+    mode: 'itemized',
+    items: input.items,
+    occurredAt: now,
+    createdBy: uid,
+    settledBy: input.settledBy,
+  }
+  batch.set(doc(ledgerCol(shopId), id), bill)
+  if (input.settledBy) {
+    batch.set(doc(ledgerCol(shopId), newId()), {
+      customerId: input.customerId,
+      type: 'payment',
+      sign: -1,
+      amountPaise: input.totalPaise,
+      method: input.settledBy,
+      description: 'Paid at sale',
+      billId: id,
+      occurredAt: now,
+      createdBy: uid,
+    })
+  }
+  fire(batch.commit())
+  return { id, ...bill }
+}
+
+/** Cancel a sale that was paid on the spot: both the bill and its payment are reversed together. */
+export function reverseSale(shopId: string, uid: string, bill: Entry, payment: Entry | undefined) {
+  const batch = writeBatch(db)
+  for (const e of payment ? [bill, payment] : [bill]) {
+    batch.set(doc(ledgerCol(shopId)), {
+      customerId: e.customerId,
+      type: 'reversal',
+      sign: e.sign === 1 ? -1 : 1,
+      amountPaise: e.amountPaise,
+      description: `Reversal of ${e.type}`,
+      reverses: e.id,
+      occurredAt: Date.now(),
+      createdBy: uid,
+    })
+  }
+  fire(batch.commit())
+}
+
+export function saveShop(shopId: string, v: { name: string; phone: string }) {
+  const batch = writeBatch(db)
+  batch.set(doc(db, 'shops', shopId), { name: v.name.trim(), phone: v.phone.trim() })
   fire(batch.commit())
 }

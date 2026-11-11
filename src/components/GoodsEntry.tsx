@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../lib/storeContext'
-import { addEntry, newId, rememberProducts } from '../lib/db'
+import { addBill, newId, rememberProducts } from '../lib/db'
+import { WALK_IN_ID, findCustomer } from '../lib/walkin'
+import BillShare from './BillShare'
 import { checkPrice, findProduct, priceFor, productsByName, type PriceCheck, type Product } from '../lib/products'
 import { formatINR, parseRupees } from '../lib/money'
 import { parseItems, type ParsedItem } from '../lib/parseItems'
-import type { Item } from '../lib/types'
+import type { Entry, Item } from '../lib/types'
 import MicButton from './MicButton'
 import { useLang } from '../lib/langContext'
 import { getVoiceLang } from '../lib/settings'
@@ -62,7 +64,11 @@ function priceWarning(r: Row, products: Product[]): { level: PriceCheck; saved: 
 const blank = (): Row => ({ key: newId(), name: '', qtyText: '1', unit: '', unitPricePaise: 0, amountText: '', suggested: false, ackedPaise: null })
 
 export default function GoodsEntry({ customerId, customerName }: { customerId: string; customerName: string }) {
-  const { shopId, uid, products, online } = useStore()
+  const { shopId, uid, products, online, customers } = useStore()
+  const walkIn = customerId === WALK_IN_ID
+  const [payOpen, setPayOpen] = useState(false)
+  const [saved, setSaved] = useState<Entry | null>(null)
+  const [sharing, setSharing] = useState(false)
   const { t } = useLang()
   const [rows, setRows] = useState<Row[]>([])
   const [typed, setTyped] = useState('')
@@ -108,31 +114,60 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
   const lines = rows.map((r) => parseRupees(r.amountText))
   const total = lines.reduce<number>((s, a) => s + (a ?? 0), 0)
 
-  function confirmAdd() {
+  /** Validate the table and build the bill items; returns null (and sets an error) if something is wrong. */
+  function prepare(): Item[] | null {
+    const fail = (m: string): null => { setErr(m); return null }
     setDone('')
-    if (!rows.length) return setErr(t('errAddOne'))
+    setSaved(null)
+    if (!rows.length) return fail(t('errAddOne'))
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i]
-      if (!r.name.trim()) return setErr(t('errNeedName'))
-      if (qtyOf(r) <= 0) return setErr(t('errQtyZero', { name: r.name }))
-      if (!lines[i]) return setErr(t('errNeedAmount', { name: r.name }))
+      if (!r.name.trim()) return fail(t('errNeedName'))
+      if (qtyOf(r) <= 0) return fail(t('errQtyZero', { name: r.name }))
+      if (!lines[i]) return fail(t('errNeedAmount', { name: r.name }))
     }
-    if (rows.some((x) => priceWarning(x, products))) return setErr(t('errPriceCheck'))
+    if (rows.some((x) => priceWarning(x, products))) return fail(t('errPriceCheck'))
     const items: Item[] = rows.map((r, i) => ({
       name: r.name.trim(), qty: qtyOf(r), unit: r.unit.trim() || 'pcs',
       unitPricePaise: Math.round(lines[i]! / qtyOf(r)), lineTotalPaise: lines[i]!,
     }))
-    addEntry(shopId, uid, { customerId, type: 'bill', mode: 'itemized', amountPaise: total, items })
-    rememberProducts(shopId, items.map((i) => ({ name: i.name, unit: i.unit, unitPricePaise: i.unitPricePaise })), products)
-    setDone(t('goodsSuccess', { amt: formatINR(total), name: customerName }) + (online ? '' : ' ' + t('savedOffline')))
-    setRows([])
     setErr('')
+    return items
+  }
+
+  /** Save the bill: on credit (Khata) or paid on the spot (cash/UPI/other). */
+  function save(settledBy?: 'cash' | 'upi' | 'other') {
+    const items = prepare()
+    if (!items) return
+    const bill = addBill(shopId, uid, {
+      customerId, items, totalPaise: total, settledBy,
+      createWalkIn: walkIn && !customers.some((c) => c.id === WALK_IN_ID),
+    })
+    rememberProducts(shopId, items.map((i) => ({ name: i.name, unit: i.unit, unitPricePaise: i.unitPricePaise })), products)
+    const offlineNote = online ? '' : ' ' + t('savedOffline')
+    setDone(
+      (settledBy
+        ? t('paidSuccess', { amt: formatINR(total), method: t(settledBy), name: customerName })
+        : t('goodsSuccess', { amt: formatINR(total), name: customerName })) + offlineNote,
+    )
+    setSaved(bill)
+    setPayOpen(false)
+    setRows([])
   }
 
   return (
     <div className="card flex flex-col gap-4">
       <h2 className="text-xl font-bold">{t('addGoods')}</h2>
-      {done && <p className="rounded-lg bg-green-100 p-3 text-lg font-semibold text-green-800">✓ {done}</p>}
+      {done && (
+        <div className="flex flex-col gap-2 rounded-lg bg-green-100 p-3">
+          <p className="text-lg font-semibold text-green-800">✓ {done}</p>
+          {saved && <button className="btn-primary" onClick={() => setSharing(true)}>📲 {t('shareBill')}</button>}
+        </div>
+      )}
+      {sharing && saved && (() => {
+        const cust = findCustomer(customers, saved.customerId)
+        return cust ? <BillShare bill={saved} customer={cust} onClose={() => setSharing(false)} /> : null
+      })()}
 
       <MicButton hint={t('tapAllGoods')} onText={addFromText} />
 
@@ -220,10 +255,23 @@ export default function GoodsEntry({ customerId, customerName }: { customerId: s
           <p className="text-lg">{t('totalItems')}: <b>{rows.length}</b></p>
           <p className="text-2xl">{t('totalAmount')}: <b>{formatINR(total)}</b></p>
           {err && <p className="mt-2 text-red-700">{err}</p>}
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button className="btn-ghost" onClick={() => tableRef.current?.scrollIntoView({ behavior: 'smooth' })}>{t('editItems')}</button>
-            <button className="btn-primary" onClick={confirmAdd}>{t('confirmAdd')}</button>
-          </div>
+          {payOpen ? (
+            <div className="mt-3 flex flex-col gap-2">
+              <p className="font-semibold">{t('chooseMethod')}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['cash', 'upi', 'other'] as const).map((m) => (
+                  <button key={m} className="btn-primary" onClick={() => save(m)}>{t(m)}</button>
+                ))}
+              </div>
+              <button className="btn-ghost" onClick={() => setPayOpen(false)}>{t('cancel')}</button>
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2">
+              <button className="btn-primary text-lg" onClick={() => { if (prepare()) setPayOpen(true) }}>💵 {t('paidNow')}</button>
+              {!walkIn && <button className="btn-ghost" onClick={() => save()}>{t('confirmAdd')}</button>}
+              <button className="btn-ghost" onClick={() => tableRef.current?.scrollIntoView({ behavior: 'smooth' })}>{t('editItems')}</button>
+            </div>
+          )}
         </div>
       )}
       {rows.length === 0 && err && <p className="text-red-700">{err}</p>}

@@ -10,6 +10,31 @@ export function balancesByCustomer(entries: Entry[]): Map<string, number> {
   return m
 }
 
+export interface CustomerStats {
+  balance: number
+  count: number
+  lastPaymentAt: number | null
+}
+
+/** Per-customer balance, entry count and the date of the last payment that was not cancelled. */
+export function customerStats(entries: Entry[]): Map<string, CustomerStats> {
+  const reversed = new Set(entries.filter((e) => e.reverses).map((e) => e.reverses))
+  const m = new Map<string, CustomerStats>()
+  for (const e of entries) {
+    const s = m.get(e.customerId) ?? { balance: 0, count: 0, lastPaymentAt: null }
+    s.balance += e.sign * e.amountPaise
+    s.count += 1
+    if (e.type === 'payment' && !reversed.has(e.id) && (s.lastPaymentAt === null || e.occurredAt > s.lastPaymentAt)) {
+      s.lastPaymentAt = e.occurredAt
+    }
+    m.set(e.customerId, s)
+  }
+  return m
+}
+
+/** Paid up = has history and nothing owed (a negative balance means they paid in advance). */
+export const isPaidUp = (s: CustomerStats | undefined) => !!s && s.count > 0 && s.balance <= 0
+
 export function withRunning(entries: Entry[]): (Entry & { running: number })[] {
   const sorted = [...entries].sort((a, b) => a.occurredAt - b.occurredAt)
   let run = 0

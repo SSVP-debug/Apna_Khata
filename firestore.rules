@@ -6,6 +6,16 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == shopId;
     }
 
+    // Shop profile (printed on bills).
+    match /shops/{shopId} {
+      allow read: if isOwner(shopId);
+      allow create, update: if isOwner(shopId)
+        && request.resource.data.keys().hasOnly(['name','phone'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
+      allow delete: if false;
+    }
+
     match /shops/{shopId}/customers/{customerId} {
       allow read: if isOwner(shopId);
       allow create, update: if isOwner(shopId)
@@ -25,7 +35,9 @@ service cloud.firestore {
     match /shops/{shopId}/ledger/{entryId} {
       allow read: if isOwner(shopId);
       allow create: if isOwner(shopId)
-        && request.resource.data.keys().hasOnly(['customerId','type','sign','amountPaise','method','description','mode','items','reverses','occurredAt','createdBy'])
+        && request.resource.data.keys().hasOnly(['customerId','type','sign','amountPaise','method','description','mode','items','reverses','settledBy','billId','occurredAt','createdBy'])
+        && (!('settledBy' in request.resource.data) || request.resource.data.settledBy in ['cash','upi','other'])
+        && (!('billId' in request.resource.data) || request.resource.data.billId is string)
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.customerId is string
         && existsAfter(/databases/$(database)/documents/shops/$(shopId)/customers/$(request.resource.data.customerId))

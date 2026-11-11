@@ -9,12 +9,14 @@ import Customers from './pages/Customers'
 import Khata from './pages/Khata'
 import TxnDetail from './pages/TxnDetail'
 import Settings from './pages/Settings'
+import type { CustomerFilter } from './pages/Customers'
 import Products from './pages/Products'
+import { WALK_IN_ID } from './lib/walkin'
 import { useLang } from './lib/langContext'
 
 export type View =
   | { name: 'home' }
-  | { name: 'customers'; owingOnly?: boolean }
+  | { name: 'customers'; filter?: CustomerFilter }
   | { name: 'customer'; id: string }
   | { name: 'txn'; id: string }
   | { name: 'settings' }
@@ -37,7 +39,7 @@ function Shell() {
     { name: 'customers', label: 'navCustomers', icon: '👥' },
     { name: 'settings', label: 'navSettings', icon: '⚙️' },
   ] as const
-  const active = view.name === 'customer' ? 'customers' : view.name === 'txn' ? 'home' : view.name === 'products' ? 'settings' : view.name
+  const active = view.name === 'customer' ? (view.id === WALK_IN_ID ? 'home' : 'customers') : view.name === 'txn' ? 'home' : view.name === 'products' ? 'settings' : view.name
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-28">
@@ -54,7 +56,7 @@ function Shell() {
       )}
       <main className="p-4">
         {view.name === 'home' && <Dashboard go={go} />}
-        {view.name === 'customers' && <Customers go={go} owingOnly={view.owingOnly} />}
+        {view.name === 'customers' && <Customers key={view.filter ?? 'all'} go={go} initialFilter={view.filter} />}
         {view.name === 'customer' && <Khata key={view.id} id={view.id} go={go} />}
         {view.name === 'txn' && <TxnDetail id={view.id} go={go} />}
         {view.name === 'settings' && <Settings go={go} />}

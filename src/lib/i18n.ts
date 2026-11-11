@@ -67,6 +67,18 @@ const en = {
   errDomain: 'This website address is not allowed yet. The app owner must add it in Firebase (Authorized domains).',
   errNotEnabled: 'This login method is not turned on yet. The app owner must enable it in Firebase.',
   errGeneric: 'Login failed. Please try again.',
+  filterOwing: 'Owing', filterPaid: 'Paid up', filterAll: 'All', paidInFull: '✓ Paid in full', advance: 'Advance paid',
+  lastPayment: 'Last payment: {date}',
+  quickSale: '🛒 Quick Sale', quickSaleHint: 'Customer pays now? Make a bill and send it on WhatsApp',
+  walkInSub: 'For customers who pay on the spot', paidNow: 'Paid now', chooseMethod: 'How did they pay?',
+  savePaid: 'Save as paid', paidSuccess: '{amt} paid ({method}). Bill saved for {name}.',
+  shareBill: 'Share bill on WhatsApp', shareTitle: 'Share Bill', phoneLabel: 'Customer WhatsApp number', phonePh: '10-digit mobile number',
+  savePhone: 'Save this number for {name}', sendWhatsApp: 'Send on WhatsApp', copyBill: 'Copy bill text', copied: 'Copied!',
+  errPhone: 'Enter a valid 10-digit mobile number', billTooLong: 'This bill is very long. Use Copy bill text and paste it in WhatsApp.',
+  shopSection: 'Shop details (shown on bills)', shopNamePh: 'Shop name', shopPhonePh: 'Shop phone', shopSaved: 'Saved', billLang: 'Bill language',
+  billNo: 'Bill No', billDate: 'Date', billCustomer: 'Customer', billTotal: 'Total', billPaid: 'Paid',
+  billOnKhata: 'Added to Khata', billBalance: 'Balance due', billThanks: 'Thank you! Visit again.', paidAtSale: 'Paid at sale',
+  noSalesYet: 'No sales yet.', close: 'Close', sendFailedHint: 'WhatsApp opens in a new window. Press Send there.',
 }
 
 export type Key = keyof typeof en
@@ -138,6 +150,18 @@ const te: Record<Key, string> = {
   errDomain: 'ఈ వెబ్‌సైట్ చిరునామా ఇంకా అనుమతించబడలేదు. యాప్ యజమాని Firebase లో (Authorized domains) జోడించాలి.',
   errNotEnabled: 'ఈ లాగిన్ పద్ధతి ఇంకా ఆన్ చేయలేదు. యాప్ యజమాని Firebase లో ఎనేబుల్ చేయాలి.',
   errGeneric: 'లాగిన్ కాలేదు. దయచేసి మళ్ళీ ప్రయత్నించండి.',
+  filterOwing: 'బాకీ ఉన్నవారు', filterPaid: 'చెల్లించినవారు', filterAll: 'అందరూ', paidInFull: '✓ పూర్తిగా చెల్లించారు', advance: 'ముందస్తు చెల్లింపు',
+  lastPayment: 'చివరి చెల్లింపు: {date}',
+  quickSale: '🛒 త్వరిత అమ్మకం', quickSaleHint: 'కస్టమర్ ఇప్పుడే చెల్లిస్తున్నారా? బిల్లు చేసి వాట్సాప్‌లో పంపండి',
+  walkInSub: 'అప్పటికప్పుడు చెల్లించే కస్టమర్ల కోసం', paidNow: 'ఇప్పుడే చెల్లించారు', chooseMethod: 'ఎలా చెల్లించారు?',
+  savePaid: 'చెల్లించినట్లు సేవ్ చేయండి', paidSuccess: '{amt} చెల్లించారు ({method}). {name} కోసం బిల్లు సేవ్ అయింది.',
+  shareBill: 'వాట్సాప్‌లో బిల్లు పంపండి', shareTitle: 'బిల్లు పంపండి', phoneLabel: 'కస్టమర్ వాట్సాప్ నంబర్', phonePh: '10 అంకెల మొబైల్ నంబర్',
+  savePhone: '{name} కోసం ఈ నంబర్ సేవ్ చేయండి', sendWhatsApp: 'వాట్సాప్‌లో పంపండి', copyBill: 'బిల్లు టెక్స్ట్ కాపీ చేయండి', copied: 'కాపీ అయింది!',
+  errPhone: 'సరైన 10 అంకెల మొబైల్ నంబర్ రాయండి', billTooLong: 'ఈ బిల్లు చాలా పెద్దది. బిల్లు టెక్స్ట్ కాపీ చేసి వాట్సాప్‌లో పేస్ట్ చేయండి.',
+  shopSection: 'షాపు వివరాలు (బిల్లుపై కనిపిస్తాయి)', shopNamePh: 'షాపు పేరు', shopPhonePh: 'షాపు ఫోన్', shopSaved: 'సేవ్ అయింది', billLang: 'బిల్లు భాష',
+  billNo: 'బిల్లు నం', billDate: 'తేదీ', billCustomer: 'కస్టమర్', billTotal: 'మొత్తం', billPaid: 'చెల్లించారు',
+  billOnKhata: 'ఖాతాలో జోడించబడింది', billBalance: 'మొత్తం బాకీ', billThanks: 'ధన్యవాదాలు! మళ్ళీ రండి.', paidAtSale: 'అమ్మకం సమయంలో చెల్లించారు',
+  noSalesYet: 'ఇంకా అమ్మకాలు లేవు.', close: 'మూసివేయి', sendFailedHint: 'వాట్సాప్ కొత్త విండోలో తెరుచుకుంటుంది. అక్కడ Send నొక్కండి.',
 }
 
 export const dictionaries: Record<Lang, Record<Key, string>> = { en, te }

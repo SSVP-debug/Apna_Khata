@@ -9,6 +9,7 @@ export interface Store {
   entries: Entry[]
   products: Product[]
   lastSync: number | null
+  shop: { name: string; phone: string }
   pending: number
   online: boolean
 }
