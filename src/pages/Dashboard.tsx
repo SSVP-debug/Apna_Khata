@@ -49,6 +49,12 @@ export default function Dashboard({ go }: { go: (v: View) => void }) {
         <span className="text-sm text-slate-600">{t('quickSaleHint')}</span>
       </button>
 
+      <button className="card flex flex-col gap-1 border-2 border-teal-700 text-left active:scale-[0.99]"
+        onClick={() => go({ name: 'wholesale' })}>
+        <span className="text-xl font-bold text-teal-800">{t('wholesaleOrderBtn')}</span>
+        <span className="text-sm text-slate-600">{t('wholesaleHelp')}</span>
+      </button>
+
       <div className="card">
         <h2 className="mb-2 text-xl font-bold">{t('recent')}</h2>
         {recent.length === 0 && <p className="text-slate-500">{t('noActivity')}</p>}
