@@ -60,13 +60,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    match /shops/{shopId}/ledger/{markerId} {
+    match /shops/{shopId}/reversalMarkers/{markerId} {
       allow read: if isOwner(shopId);
       allow create: if isOwner(shopId)
-        && markerId == request.resource.data.originalId + '-reversed'
-        && request.resource.data.keys().hasOnly(['type', 'originalId', 'createdBy', 'createdAt'])
-        && request.resource.data.type == 'reversal-marker'
+        && markerId.size() > 0
+        && request.resource.data.keys().hasOnly(['originalId', 'createdBy', 'createdAt'])
         && request.resource.data.originalId is string
+        && markerId == request.resource.data.originalId
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt is number
         && exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId));
