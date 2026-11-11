@@ -41,7 +41,7 @@ function Shell() {
     { name: 'customers', label: 'navCustomers', icon: '👥' },
     { name: 'settings', label: 'navSettings', icon: '⚙️' },
   ] as const
-  const active = view.name === 'customer' ? (view.id === WALK_IN_ID ? 'home' : 'customers') : view.name === 'txn' ? 'home' : view.name === 'products' ? 'settings' : view.name
+  const active = view.name === 'wholesale' ? 'home' : view.name === 'customer' ? (view.id === WALK_IN_ID ? 'home' : 'customers') : view.name === 'txn' ? 'home' : view.name === 'products' ? 'settings' : view.name
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-28">
