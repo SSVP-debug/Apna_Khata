@@ -82,6 +82,16 @@ const en = {
   billNo: 'Bill No', billDate: 'Date', billCustomer: 'Customer', billTotal: 'Total', billPaid: 'Paid',
   billOnKhata: 'Added to Khata', billBalance: 'Balance due', billThanks: 'Thank you! Visit again.', paidAtSale: 'Paid at sale',
   noSalesYet: 'No sales yet.', close: 'Close', done: 'Done', sendFailedHint: 'WhatsApp opens in a new window. Press Send there.',
+  wholesaleOrderBtn: '📦 Order goods from wholesaler', wholesaleHelp: 'Make a goods list and send it on WhatsApp.',
+  wholesaleTitle: 'Wholesale Order', wholesaleIntro: 'Prepare the goods you need and send the list to your wholesaler.',
+  wholesaleNumber: 'Wholesaler WhatsApp number', wholesaleNumberPh: '10-digit mobile number',
+  wholesaleNumberError: 'Enter a valid 10-digit Indian mobile number.',
+  wholesaleItems: 'Goods needed', wholesaleItemName: 'Goods name', wholesaleQty: 'Quantity', wholesaleUnit: 'Unit',
+  wholesaleAddItem: '+ Add goods', wholesaleRemove: 'Remove', wholesaleVoiceHint: 'Tap and say the goods you need',
+  wholesaleFrequent: 'Your saved items', wholesaleEmpty: 'No goods added yet. Add items below.',
+  wholesaleNeedItems: 'Add at least one item before sending.', wholesaleQtyError: 'Enter a valid quantity for every item.',
+  wholesaleSend: 'Send order on WhatsApp', wholesaleDraftSaved: 'Draft is saved on this phone.',
+  wholesaleClear: 'Clear list', wholesaleBack: 'Back to Home',
 }
 
 export type Key = keyof typeof en
@@ -168,6 +178,16 @@ const te: Record<Key, string> = {
   billNo: 'బిల్లు నం', billDate: 'తేదీ', billCustomer: 'కస్టమర్', billTotal: 'మొత్తం', billPaid: 'చెల్లించారు',
   billOnKhata: 'ఖాతాలో జోడించబడింది', billBalance: 'మొత్తం బాకీ', billThanks: 'ధన్యవాదాలు! మళ్ళీ రండి.', paidAtSale: 'అమ్మకం సమయంలో చెల్లించారు',
   noSalesYet: 'ఇంకా అమ్మకాలు లేవు.', close: 'మూసివేయి', done: 'పూర్తయింది', sendFailedHint: 'వాట్సాప్ కొత్త విండోలో తెరుచుకుంటుంది. అక్కడ Send నొక్కండి.',
+  wholesaleOrderBtn: '📦 హోల్‌సేల్ షాపుకు సరుకుల ఆర్డర్', wholesaleHelp: 'కావాల్సిన సరుకుల జాబితా చేసి వాట్సాప్‌లో పంపండి.',
+  wholesaleTitle: 'హోల్‌సేల్ ఆర్డర్', wholesaleIntro: 'మీకు కావాల్సిన సరుకుల జాబితా తయారు చేసి హోల్‌సేల్ షాపుకు పంపండి.',
+  wholesaleNumber: 'హోల్‌సేల్ యజమాని వాట్సాప్ నంబర్', wholesaleNumberPh: '10 అంకెల మొబైల్ నంబర్',
+  wholesaleNumberError: 'సరైన 10 అంకెల భారతీయ మొబైల్ నంబర్ రాయండి.',
+  wholesaleItems: 'కావాల్సిన సరుకులు', wholesaleItemName: 'సరుకు పేరు', wholesaleQty: 'పరిమాణం', wholesaleUnit: 'యూనిట్',
+  wholesaleAddItem: '+ సరుకు జోడించండి', wholesaleRemove: 'తొలగించు', wholesaleVoiceHint: 'నొక్కి కావాల్సిన సరుకులు చెప్పండి',
+  wholesaleFrequent: 'మీరు సేవ్ చేసిన వస్తువులు', wholesaleEmpty: 'ఇంకా సరుకులు జోడించలేదు. కింద జోడించండి.',
+  wholesaleNeedItems: 'పంపే ముందు కనీసం ఒక సరుకు జోడించండి.', wholesaleQtyError: 'ప్రతి సరుకుకు సరైన పరిమాణం రాయండి.',
+  wholesaleSend: 'వాట్సాప్‌లో ఆర్డర్ పంపండి', wholesaleDraftSaved: 'డ్రాఫ్ట్ ఈ ఫోన్‌లో సేవ్ అయింది.',
+  wholesaleClear: 'జాబితా ఖాళీ చేయండి', wholesaleBack: 'హోమ్‌కు వెనక్కి',
 }
 
 export const dictionaries: Record<Lang, Record<Key, string>> = { en, te }
