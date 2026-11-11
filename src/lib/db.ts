@@ -60,11 +60,9 @@ export function addEntry(shopId: string, uid: string, e: {
   return id
 }
 
-function reversalMarkerId(originalId: string): string { return originalId }
-
 /**
- * Reversals use a deterministic marker document ID. Firestore rules prevent two devices
- * from creating the same marker, while the append-only ledger keeps the original history.
+ * Each original entry gets one separate marker. Firestore rules reject a second marker,
+ * including when two phones try to cancel the same entry at nearly the same time.
  */
 function addReversal(batch: ReturnType<typeof writeBatch>, shopId: string, uid: string, original: Entry) {
   batch.set(doc(ledgerCol(shopId), newId()), {
@@ -77,8 +75,7 @@ function addReversal(batch: ReturnType<typeof writeBatch>, shopId: string, uid: 
     occurredAt: Date.now(),
     createdBy: uid,
   })
-  batch.set(doc(db, 'shops', shopId, 'reversalMarkers', reversalMarkerId(original.id)), {
-    type: 'reversal-marker',
+  batch.set(doc(db, 'shops', shopId, 'reversalMarkers', original.id), {
     originalId: original.id,
     createdBy: uid,
     createdAt: Date.now(),
