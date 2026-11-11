@@ -77,7 +77,7 @@ function addReversal(batch: ReturnType<typeof writeBatch>, shopId: string, uid: 
     occurredAt: Date.now(),
     createdBy: uid,
   })
-  batch.set(doc(ledgerCol(shopId), reversalMarkerId(original.id)), {
+  batch.set(doc(db, 'shops', shopId, 'reversalMarkers', reversalMarkerId(original.id)), {
     type: 'reversal-marker',
     originalId: original.id,
     createdBy: uid,
