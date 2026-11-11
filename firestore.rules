@@ -69,7 +69,8 @@ service cloud.firestore {
         && markerId == request.resource.data.originalId
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt is number
-        && exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId));
+        && exists(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId))
+        && getAfter(/databases/$(database)/documents/shops/$(shopId)/ledger/$(request.resource.data.originalId)).data.customerId is string;
       allow update, delete: if false;
     }
 
