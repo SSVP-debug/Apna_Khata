@@ -1,69 +1,63 @@
 import type { Entry } from './types'
 
 export function balanceOf(entries: Entry[]): number {
-  return entries.reduce((s, e) => s + e.sign * e.amountPaise, 0)
+  return entries.reduce((sum, entry) => sum + entry.sign * entry.amountPaise, 0)
 }
 
 export function balancesByCustomer(entries: Entry[]): Map<string, number> {
-  const m = new Map<string, number>()
-  for (const e of entries) m.set(e.customerId, (m.get(e.customerId) ?? 0) + e.sign * e.amountPaise)
-  return m
+  const balances = new Map<string, number>()
+  for (const entry of entries) balances.set(entry.customerId, (balances.get(entry.customerId) ?? 0) + entry.sign * entry.amountPaise)
+  return balances
 }
 
-export interface CustomerStats {
-  balance: number
-  count: number
-  lastPaymentAt: number | null
-}
+export interface CustomerStats { balance: number; count: number; lastPaymentAt: number | null }
 
-/** Per-customer balance, entry count and the date of the last payment that was not cancelled. */
 export function customerStats(entries: Entry[]): Map<string, CustomerStats> {
-  const reversed = new Set(entries.filter((e) => e.reverses).map((e) => e.reverses))
-  const m = new Map<string, CustomerStats>()
-  for (const e of entries) {
-    const s = m.get(e.customerId) ?? { balance: 0, count: 0, lastPaymentAt: null }
-    s.balance += e.sign * e.amountPaise
-    s.count += 1
-    if (e.type === 'payment' && !reversed.has(e.id) && (s.lastPaymentAt === null || e.occurredAt > s.lastPaymentAt)) {
-      s.lastPaymentAt = e.occurredAt
-    }
-    m.set(e.customerId, s)
+  const reversed = new Set(entries.filter((entry) => entry.reverses).map((entry) => entry.reverses))
+  const result = new Map<string, CustomerStats>()
+  for (const entry of entries) {
+    const stats = result.get(entry.customerId) ?? { balance: 0, count: 0, lastPaymentAt: null }
+    stats.balance += entry.sign * entry.amountPaise
+    stats.count += 1
+    if (entry.type === 'payment' && !reversed.has(entry.id) &&
+      (stats.lastPaymentAt === null || entry.occurredAt > stats.lastPaymentAt)) stats.lastPaymentAt = entry.occurredAt
+    result.set(entry.customerId, stats)
   }
-  return m
+  return result
 }
 
-/** Paid up = has history and nothing owed (a negative balance means they paid in advance). */
-export const isPaidUp = (s: CustomerStats | undefined) => !!s && s.count > 0 && s.balance <= 0
+export const isPaidUp = (stats: CustomerStats | undefined) => !!stats && stats.count > 0 && stats.balance <= 0
 
 export function withRunning(entries: Entry[]): (Entry & { running: number })[] {
-  const sorted = [...entries].sort((a, b) => a.occurredAt - b.occurredAt)
-  let run = 0
-  return sorted.map((e) => {
-    run += e.sign * e.amountPaise
-    return { ...e, running: run }
+  const sorted = [...entries].sort((a, b) => a.occurredAt - b.occurredAt || a.id.localeCompare(b.id))
+  let running = 0
+  return sorted.map((entry) => {
+    running += entry.sign * entry.amountPaise
+    return { ...entry, running }
   })
 }
 
 export function startOfToday(): number {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.getTime()
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
 }
 
+/** Totals count valid sales and payments only; reversed originals and their reversals cancel each other. */
 export function todayTotals(entries: Entry[]) {
-  const t = startOfToday()
-  let sales = 0
-  let payments = 0
-  for (const e of entries) {
-    if (e.occurredAt < t) continue
-    if (e.type === 'bill') sales += e.amountPaise
-    if (e.type === 'payment') payments += e.amountPaise
-  }
-  return { sales, payments }
+  const start = startOfToday()
+  const todays = entries.filter((entry) => entry.occurredAt >= start)
+  const sales = todays.filter((entry) => entry.type === 'bill').reduce((sum, entry) => sum + entry.sign * entry.amountPaise, 0)
+  const payments = todays.filter((entry) => entry.type === 'payment').reduce((sum, entry) => sum + entry.sign * entry.amountPaise, 0) * -1
+  const validSales = Math.max(0, sales)
+  const collected = Math.max(0, payments)
+  return { sales: validSales, payments: collected }
 }
 
 export function toCSV(rows: (string | number)[][]): string {
-  return rows
-    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
+  return rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+}
+
+export function toJSONBackup(data: unknown): string {
+  return JSON.stringify({ format: 'apna-khata-backup', version: 1, exportedAt: new Date().toISOString(), data }, null, 2)
 }
