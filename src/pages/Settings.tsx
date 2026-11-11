@@ -103,7 +103,6 @@ export default function Settings({ go }: { go: (v: View) => void }) {
         <button className="btn-ghost" onClick={exportCSV}>{t('csv')}</button>
         <button className="btn-ghost" onClick={exportBackup}>{t('backup')}</button>
       </div>
-      <button className="btn-ghost text-red-700" onClick={() => signOut(auth)}>{t('logout')}</button>
-    </div>
+      <button className="btn-ghost text-red-700" onClick={() => signOut(auth)}>{t('logout')}</button>\n    </div>
   )
 }
