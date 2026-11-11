@@ -36,6 +36,15 @@ describe('ledger calculations', () => {
       entry({ id: 'reverse', type: 'reversal', sign: -1, reverses: 'bill', occurredAt: now + 1 }),
     ]).sales).toBe(0)
   })
+  it('counts only bills and payments recorded today', () => {
+    const now = Date.now()
+    const yesterday = now - 2 * 86400000
+    expect(todayTotals([
+      entry({ id: 'old-bill', occurredAt: yesterday }),
+      entry({ id: 'today-bill', occurredAt: now, amountPaise: 3500 }),
+      entry({ id: 'today-payment', type: 'payment', sign: -1, amountPaise: 1500, occurredAt: now }),
+    ])).toEqual({ sales: 3500, payments: 1500 })
+  })
   it('removes a cancelled payment from today collections', () => {
     const now = Date.now()
     expect(todayTotals([
