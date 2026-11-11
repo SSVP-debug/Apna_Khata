@@ -37,9 +37,9 @@ export default function Settings({ go }: { go: (v: View) => void }) {
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null)
 
   useEffect(() => {
-    const h = (e: Event) => { e.preventDefault(); setInstallEvt(e as InstallEvent) }
-    window.addEventListener('beforeinstallprompt', h)
-    return () => window.removeEventListener('beforeinstallprompt', h)
+    const handler = (event: Event) => { event.preventDefault(); setInstallEvt(event as InstallEvent) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   function downloadFile(filename: string, content: string, type: string) {
@@ -103,6 +103,7 @@ export default function Settings({ go }: { go: (v: View) => void }) {
         <button className="btn-ghost" onClick={exportCSV}>{t('csv')}</button>
         <button className="btn-ghost" onClick={exportBackup}>{t('backup')}</button>
       </div>
-      <button className="btn-ghost text-red-700" onClick={() => signOut(auth)}>{t('logout')}</button>\n    </div>
+      <button className="btn-ghost text-red-700" onClick={() => signOut(auth)}>{t('logout')}</button>
+    </div>
   )
 }
