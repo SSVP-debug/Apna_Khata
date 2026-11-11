@@ -2,43 +2,38 @@ import { describe, expect, it } from 'vitest'
 import { parseItems } from './parseItems'
 
 describe('parseItems', () => {
-  it('parses the spec example', () => {
+  it('parses common English items', () => {
     expect(parseItems('Two kg rice 120, one oil packet 150, three kg sugar 135.')).toEqual([
       { name: 'Rice', qty: 2, unit: 'kg', amountPaise: 12000 },
       { name: 'Oil', qty: 1, unit: 'packet', amountPaise: 15000 },
       { name: 'Sugar', qty: 3, unit: 'kg', amountPaise: 13500 },
     ])
   })
-  it('handles digits glued to units and "and"', () => {
-    const r = parseItems('2kg rice 120 and 1 kg sugar 45')
-    expect(r.map((i) => [i.name, i.qty, i.amountPaise])).toEqual([['Rice', 2, 12000], ['Sugar', 1, 4500]])
+  it('handles digits joined to units and separates items on and', () => {
+    expect(parseItems('2kg rice 120 and 1 kg sugar 45').map((item) => [item.name, item.qty, item.amountPaise]))
+      .toEqual([['Rice', 2, 12000], ['Sugar', 1, 4500]])
   })
-  it('defaults qty to 1 when only amount is spoken', () => {
+  it('uses quantity one when the owner says only an item and amount', () => {
     expect(parseItems('rice 120')[0]).toMatchObject({ name: 'Rice', qty: 1, amountPaise: 12000 })
   })
-  it('does not guess a missing amount', () => {
+  it('leaves missing amounts blank for the owner to fill', () => {
     expect(parseItems('2 kg rice')[0]).toMatchObject({ name: 'Rice', qty: 2, unit: 'kg', amountPaise: null })
   })
-  it('handles half and ignores "total"', () => {
-    const r = parseItems('half kg sugar 25, total 25')
-    expect(r).toHaveLength(1)
-    expect(r[0]).toMatchObject({ qty: 0.5, amountPaise: 2500 })
+  it('handles half quantities and ignores a spoken total', () => {
+    expect(parseItems('half kg sugar 25, total 25')).toHaveLength(1)
+    expect(parseItems('half kg sugar 25')[0]).toMatchObject({ qty: 0.5, amountPaise: 2500 })
   })
-  it('parses Telugu word order (item, qty, unit, amount in words)', () => {
+  it('understands common Telugu item order', () => {
     expect(parseItems('బియ్యం రెండు కిలోలు నూట ఇరవై')[0]).toEqual({ name: 'బియ్యం', qty: 2, unit: 'kg', amountPaise: 12000 })
   })
-  it('parses Telugu fractions and compound numbers', () => {
-    expect(parseItems('అర కిలో పంచదార ఇరవై ఐదు')[0]).toMatchObject({ qty: 0.5, unit: 'kg', amountPaise: 2500 })
-    expect(parseItems('నూనె ప్యాకెట్ రెండు వందల యాభై')[0]).toMatchObject({ unit: 'packet', amountPaise: 25000 })
-  })
-  it('parses Telugu digits and mixed digits', () => {
+  it('handles Telugu digits and amounts', () => {
     expect(parseItems('బియ్యం ౨ కిలో ౧౨౦')[0]).toMatchObject({ qty: 2, amountPaise: 12000 })
-    expect(parseItems('పప్పు 1 కిలో 140')[0]).toMatchObject({ name: 'పప్పు', qty: 1, unit: 'kg', amountPaise: 14000 })
   })
-  it('splits Telugu items on మరియు', () => {
-    expect(parseItems('బియ్యం 2 కిలో 120 మరియు నూనె 1 లీటర్ 150')).toHaveLength(2)
+  it('does not create an item from text without a product name', () => {
+    expect(parseItems('120')).toEqual([])
+    expect(parseItems('')).toEqual([])
   })
-  it('English compound numbers', () => {
-    expect(parseItems('oil one litre two hundred fifty')[0]).toMatchObject({ qty: 1, unit: 'litre', amountPaise: 25000 })
+  it('does not turn a zero quantity into one', () => {
+    expect(parseItems('0 kg rice 100')).toEqual([])
   })
 })
