@@ -14,33 +14,33 @@ export default function WholesaleOrder({ go }: { go: (v: View) => void }) {
   const { shopId, shop, products } = useStore()
   const { t, lang } = useLang()
   const storageKey = `apna-khata-wholesale-order:${shopId}`
-  const [phone, setPhone] = useState('')
-  const [items, setItems] = useState<DraftItem[]>([])
-  const [loaded, setLoaded] = useState(false)
+  function readDraft(): Draft {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) return { phone: '', items: [] }
+      const draft = JSON.parse(raw) as Partial<Draft>
+      return {
+        phone: typeof draft.phone === 'string' ? draft.phone : '',
+        items: Array.isArray(draft.items) ? draft.items.filter((item): item is DraftItem =>
+          !!item && typeof item.id === 'string' && typeof item.name === 'string'
+          && typeof item.qty === 'string' && typeof item.unit === 'string') : [],
+      }
+    } catch {
+      // Ignore an unreadable local draft and keep the order form available.
+      return { phone: '', items: [] }
+    }
+  }
+
+  const [initialDraft] = useState(readDraft)
+  const [phone, setPhone] = useState(initialDraft.phone)
+  const [items, setItems] = useState<DraftItem[]>(initialDraft.items)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (!raw) return
-      const draft = JSON.parse(raw) as Draft
-      setPhone(typeof draft.phone === 'string' ? draft.phone : '')
-      setItems(Array.isArray(draft.items) ? draft.items.filter((item) =>
-        item && typeof item.id === 'string' && typeof item.name === 'string'
-        && typeof item.qty === 'string' && typeof item.unit === 'string') : [])
-    } catch {
-      // Ignore an unreadable local draft and keep the order form available.
-    } finally {
-      setLoaded(true)
-    }
-  }, [storageKey])
-
-  useEffect(() => {
-    if (!loaded) return
     try { localStorage.setItem(storageKey, JSON.stringify({ phone, items } satisfies Draft)) } catch {
       // The order remains usable if browser storage is unavailable.
     }
-  }, [loaded, storageKey, phone, items])
+  }, [storageKey, phone, items])
 
   function addSpokenGoods(text: string) {
     const parsed = parseItems(text)
