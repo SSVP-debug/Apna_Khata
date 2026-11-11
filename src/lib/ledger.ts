@@ -43,15 +43,18 @@ export function startOfToday(): number {
   return date.getTime()
 }
 
-/** Totals count valid sales and payments only; reversed originals and their reversals cancel each other. */
+/** Sales and payments recorded today, minus any cancellations recorded today for those entries. */
 export function todayTotals(entries: Entry[]) {
   const start = startOfToday()
   const todays = entries.filter((entry) => entry.occurredAt >= start)
-  const sales = todays.filter((entry) => entry.type === 'bill').reduce((sum, entry) => sum + entry.sign * entry.amountPaise, 0)
-  const payments = todays.filter((entry) => entry.type === 'payment').reduce((sum, entry) => sum + entry.sign * entry.amountPaise, 0) * -1
-  const validSales = Math.max(0, sales)
-  const collected = Math.max(0, payments)
-  return { sales: validSales, payments: collected }
+  const reversedIds = new Set(todays.filter((entry) => entry.reverses).map((entry) => entry.reverses))
+  const sales = todays
+    .filter((entry) => entry.type === 'bill' && !reversedIds.has(entry.id))
+    .reduce((sum, entry) => sum + entry.amountPaise, 0)
+  const payments = todays
+    .filter((entry) => entry.type === 'payment' && !reversedIds.has(entry.id))
+    .reduce((sum, entry) => sum + entry.amountPaise, 0)
+  return { sales, payments }
 }
 
 export function toCSV(rows: (string | number)[][]): string {
