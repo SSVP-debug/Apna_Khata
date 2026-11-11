@@ -60,19 +60,37 @@ export function addEntry(shopId: string, uid: string, e: {
   return id
 }
 
+function reversalMarkerId(originalId: string): string { return `${originalId}-reversed` }
+
+/**
+ * Reversals use a deterministic marker document ID. Firestore rules prevent two devices
+ * from creating the same marker, while the append-only ledger keeps the original history.
+ */
+function addReversal(batch: ReturnType<typeof writeBatch>, shopId: string, uid: string, original: Entry) {
+  batch.set(doc(ledgerCol(shopId), newId()), {
+    customerId: original.customerId,
+    type: 'reversal',
+    sign: original.sign === 1 ? -1 : 1,
+    amountPaise: original.amountPaise,
+    description: `Reversal of ${original.type}`,
+    reverses: original.id,
+    occurredAt: Date.now(),
+    createdBy: uid,
+  })
+  batch.set(doc(ledgerCol(shopId), reversalMarkerId(original.id)), {
+    type: 'reversal-marker',
+    originalId: original.id,
+    createdBy: uid,
+    createdAt: Date.now(),
+  })
+}
+
 export function reverseEntry(shopId: string, uid: string, original: Entry, allEntries: Entry[] = []) {
   if (original.type === 'opening' || original.type === 'reversal') return
   if (allEntries.some((entry) => entry.reverses === original.id)) return
-  const reversalId = newId()
   const batch = writeBatch(db)
-  batch.set(doc(ledgerCol(shopId), reversalId), {
-    customerId: original.customerId, type: 'reversal',
-    sign: original.sign === 1 ? -1 : 1, amountPaise: original.amountPaise,
-    description: `Reversal of ${original.type}`, reverses: original.id,
-    occurredAt: Date.now(), createdBy: uid,
-  })
+  addReversal(batch, shopId, uid, original)
   fire(batch.commit())
-  return reversalId
 }
 
 export function rememberProducts(shopId: string, items: { name: string; unit: string; unitPricePaise: number }[], existing: Product[]) {
@@ -136,13 +154,8 @@ export function reverseSale(shopId: string, uid: string, bill: Entry, payment: E
   const originals = payment ? [bill, payment] : [bill]
   if (originals.some((original) => allEntries.some((entry) => entry.reverses === original.id))) return
   const batch = writeBatch(db)
-  const now = Date.now()
-  for (const original of originals) batch.set(doc(ledgerCol(shopId), newId()), {
-    customerId: original.customerId, type: 'reversal',
-    sign: original.sign === 1 ? -1 : 1, amountPaise: original.amountPaise,
-    description: `Reversal of ${original.type}`, reverses: original.id,
-    occurredAt: now, createdBy: uid,
-  })
+  addReversal(batch, shopId, uid, bill)
+  if (payment) addReversal(batch, shopId, uid, payment)
   fire(batch.commit())
 }
 
