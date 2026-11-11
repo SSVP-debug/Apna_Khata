@@ -60,7 +60,7 @@ export function addEntry(shopId: string, uid: string, e: {
   return id
 }
 
-function reversalMarkerId(originalId: string): string { return `${originalId}-reversed` }
+function reversalMarkerId(originalId: string): string { return originalId }
 
 /**
  * Reversals use a deterministic marker document ID. Firestore rules prevent two devices
